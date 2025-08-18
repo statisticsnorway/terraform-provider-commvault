@@ -1,10 +1,4 @@
-package commvault
-
-type CommvaultConfig struct {
-	BaseURL  string
-	Username string
-	Password string
-}
+package provider
 
 type loginResponse struct {
 	Token string `xml:"token,attr"`
