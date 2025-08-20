@@ -5,19 +5,16 @@ The CommvaultX Terraform provider allows you to manage Commvault resources such 
 jobs, directly from Terraform.
 This version is maintained by Statistics Norway and is not affiliated with the official Commvault provider.
 
-Where does the X in CommvaultX
+The provider leverages VM deployed in GCP that connects GCP to CommVault on premise for running backup jobs etc. on GCP buckets.
 
-⸻
-
-Features
+### Features
 
 - Create and delete Commvault clients.
 - Retrieve client information.
 - (Planned) Manage backup jobs for Google Cloud Storage buckets.
 
-⸻
 
-Prerequisites
+### Prerequisites for development locally  
 
 - Terraform >= 1.0
 - Go (for building from source)
@@ -34,15 +31,11 @@ Prerequisites
 | Job       | A one of run of a backup                                                                                     |
 
 ```mermaid
----
-title: Backup
----
 graph
     Gcp[VM in GCP] -- Save backup --> Ground[Commvault backup server on prem]
     CommandCenter[Commvault API and web-GUI] -- Configure and trigger backup --> Ground
     CommandCenter[Commvault API and web-GUI] -- Configure and trigger backup --> Gcp
     Gcp -- Read and backup --> GcpBucket((Buckets in GCP))
-
 
 
 ```
@@ -81,6 +74,4 @@ To run requests against the API using the API Explorer (or curl):
     }'
     ```
 5. Get the token, authorize and send requests
-
-
 
