@@ -3,6 +3,8 @@ Terraform Provider for CommvaultX
 The CommvaultX Terraform provider allows you to manage Commvault resources such as clients and, in the future, backup jobs, directly from Terraform.
 This version is maintained by Statistics Norway and is not affiliated with the official Commvault provider.
 
+Currently provider leverages VM deployed in GCP that connects GCP to CommVault on premise for running backup jobs etc. on GCP buckets.
+
 ⸻
 
 🚀 Features
@@ -20,35 +22,46 @@ This version is maintained by Statistics Norway and is not affiliated with the o
 
 ⸻
 
-🛠 Building the Provider Locally
+🛠 How to do development locally on the provider
 
 ```bash
 
 1. Clone the repo
 
 git clone https://github.com/statisticsnorway/terraform-provider-commvaultx.git
-cd terraform-provider-commvaultx
 
-2. Build the provider binary
+2. Fetch token from CommVault Login endpoint , username/password in project org-secrets secret manager : 
+
+curl -sk -X POST "https://193.160.175.103/commandcenter/api/Login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "",
+    "password": "",
+    "encodeBase64": true
+  }'
+
+3. Do code changes to the provider as needed , example of resource currently implemented in internal/provider/resource_client.go	   
+
+4. Build the provider binary
 
 go build -o terraform-provider-commvaultx
 
-3. Create the local plugin directory (macOS arm64 example)
+5. Create the local plugin directory (macOS arm64 example)
 
 mkdir -p ~/.terraform.d/plugins/registry.terraform.io/statisticsnorway/commvaultx/0.1.0/darwin_arm64
 
-4. Move the binary into the plugin directory
+6. Move the binary into the plugin directory
 
 mv terraform-provider-commvaultx ~/.terraform.d/plugins/registry.terraform.io/statisticsnorway/commvaultx/0.1.0/darwin_arm64/
 
-5. Make it executable
+7. Make it executable
 
 chmod +x ~/.terraform.d/plugins/registry.terraform.io/statisticsnorway/commvaultx/0.1.0/darwin_arm64/terraform-provider-commvaultx
 ```
 
 ⸻
 
-📄 Example Usage
+📄 Example Usage of Provider in Terraform
 
 main.tf
 ```hcl
@@ -134,7 +147,7 @@ type        = string
 
 terraform.tfvars
 ```hcl
-commvault_base_url = “https://example.com/commandcenter/api”
+commvault_base_url = “https://193.160.175.103/commandcenter/api”
 commvault_username = “example_user”
 commvault_password = “example_password”
 
