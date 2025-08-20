@@ -1,13 +1,13 @@
 terraform {
   required_providers {
-    commvaultx = {
-      source  = "statisticsnorway/commvaultx"
+    commvault = {
+      source  = "statisticsnorway/commvault"
       version = "0.1.0"
     }
   }
 }
 
-provider "commvaultx" {
+provider "commvault" {
   base_url = var.commvault_base_url
   username = var.commvault_username
   password = var.commvault_password

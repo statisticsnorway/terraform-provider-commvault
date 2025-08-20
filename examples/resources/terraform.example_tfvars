@@ -1,6 +1,6 @@
-commvault_base_url = "https : //example.com/commandcenter/api"
+commvault_base_url = "https://example.com/commandcenter/api"
 commvault_username = "example_user"
-commvault_password = "example_password"
+commvault_password = "<base64 encoded password>"
 
 client_name    = "gcp-commvault-poc"
 plan_id        = 1
