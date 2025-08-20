@@ -1,7 +1,7 @@
 # Terraform Provider for Commvault
 
 
-The CommvaultX Terraform provider allows you to manage Commvault resources such as clients and, in the future, backup
+The Commvault Terraform provider allows you to manage Commvault resources such as clients and, in the future, backup
 jobs, directly from Terraform.
 This version is maintained by Statistics Norway and is not affiliated with the official Commvault provider.
 
@@ -47,10 +47,10 @@ VM in GCP is configured in: https://github.com/statisticsnorway/terraform-ssb-gc
 ### Terraform provider
 
 1. See description at (terraform own tutorial)[https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider#prepare-terraform-for-local-provider-install]
-   The key in `dev_overrides` block should be `statisticsnorway/commvaultx`, like:
+   The key in `dev_overrides` block should be `statisticsnorway/commvault`, like:
    ```hcl
      dev_overrides {
-         "statisticsnorway/commvaultx" = "<PATH>"
+         "statisticsnorway/commvault" = "<PATH>"
      }
    ```
 2. Install the provider with with `go install .`

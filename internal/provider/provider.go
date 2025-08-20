@@ -26,7 +26,7 @@ type providerModel struct {
 }
 
 func (p *commvaultProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "commvaultx"
+	resp.TypeName = "commvault"
 	resp.Version = p.version
 }
 
