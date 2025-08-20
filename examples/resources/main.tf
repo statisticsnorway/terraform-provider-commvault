@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     commvault = {
-      source  = "registry.terraform.io/statisticsnorway/commvault"
+      source  = "statisticsnorway/commvault"
       version = "0.1.0"
     }
   }
