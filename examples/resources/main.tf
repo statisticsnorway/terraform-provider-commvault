@@ -1,19 +1,19 @@
 terraform {
   required_providers {
-    commvaultx = {
-      source  = "registry.terraform.io/statisticsnorway/commvaultx"
+    commvault = {
+      source  = "registry.terraform.io/statisticsnorway/commvault"
       version = "0.1.0"
     }
   }
 }
 
-provider "commvaultx" {
+provider "commvault" {
   base_url = var.commvault_base_url
   username = var.commvault_username
   password = var.commvault_password
 }
 
-resource "commvaultx_client" "gcp_client" {
+resource "commvault_client" "gcp_client" {
   name           = var.client_name
   plan_id        = var.plan_id
   credential_id  = var.credential_id
@@ -22,9 +22,9 @@ resource "commvaultx_client" "gcp_client" {
 }
 
 output "created_client_id" {
-  value = commvaultx_client.gcp_client.id
+  value = commvault_client.gcp_client.id
 }
 
 output "client_response" {
-  value = commvaultx_client.gcp_client.response
+  value = commvault_client.gcp_client.response
 }
