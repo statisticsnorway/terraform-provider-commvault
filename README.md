@@ -1,24 +1,28 @@
-Terraform Provider for CommvaultX
+# Terraform Provider for Commvault
 
-The CommvaultX Terraform provider allows you to manage Commvault resources such as clients and, in the future, backup jobs, directly from Terraform.
+
+The CommvaultX Terraform provider allows you to manage Commvault resources such as clients and, in the future, backup
+jobs, directly from Terraform.
 This version is maintained by Statistics Norway and is not affiliated with the official Commvault provider.
 
-⸻
-
-🚀 Features
-	•	Create and delete Commvault clients.
-	•	Retrieve client information.
-	•	(Planned) Manage backup jobs for Google Cloud Storage buckets.
+Where does the X in CommvaultX
 
 ⸻
 
-📋 Requirements
-	•	Terraform >= 1.0
-	•	Go >= 1.21 (for building from source)
-	•	Access to a Commvault Command Center API endpoint.
-	•	Valid Commvault credentials.
+Features
 
+- Create and delete Commvault clients.
+- Retrieve client information.
+- (Planned) Manage backup jobs for Google Cloud Storage buckets.
 
+⸻
+
+Prerequisites
+
+- Terraform >= 1.0
+- Go (for building from source)
+- Access to a Commvault Command Center API endpoint.
+- Valid Commvault credentials.
 
 ## Terms and concepts
 
@@ -29,7 +33,6 @@ This version is maintained by Statistics Norway and is not affiliated with the o
 | Plan      | A scheduled run of a collection of subclient. The subclients does not need to belong to same client.         |
 | Job       | A one of run of a backup                                                                                     |
 
-
 ```mermaid
 ---
 title: Backup
@@ -38,12 +41,11 @@ graph
     Gcp[VM in GCP] -- Save backup --> Ground[Commvault backup server on prem]
     CommandCenter[Commvault API and web-GUI] -- Configure and trigger backup --> Ground
     CommandCenter[Commvault API and web-GUI] -- Configure and trigger backup --> Gcp
-    Gcp -- Read and backup-->GcpBucket((Buckets in GCP))
+    Gcp -- Read and backup --> GcpBucket((Buckets in GCP))
 
 
 
 ```
-
 
 VM in GCP is configured in: https://github.com/statisticsnorway/terraform-ssb-gcp-org/blob/main/backup.tf
 
@@ -79,5 +81,6 @@ To run requests against the API using the API Explorer (or curl):
     }'
     ```
 5. Get the token, authorize and send requests
+
 
 
