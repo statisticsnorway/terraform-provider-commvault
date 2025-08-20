@@ -11,6 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -40,13 +43,45 @@ func (r *clientResource) Metadata(_ context.Context, req resource.MetadataReques
 func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id":             schema.StringAttribute{Computed: true},
-			"name":           schema.StringAttribute{Required: true},
-			"plan_id":        schema.Int64Attribute{Required: true},
-			"credential_id":  schema.Int64Attribute{Required: true},
-			"access_node_id": schema.Int64Attribute{Required: true},
-			"project_id":     schema.StringAttribute{Required: true},
-			"response":       schema.StringAttribute{Computed: true},
+			"id": schema.StringAttribute{
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"name": schema.StringAttribute{
+				Required: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"plan_id": schema.Int64Attribute{
+				Required: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
+			},
+			"credential_id": schema.Int64Attribute{
+				Required: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
+			},
+			"access_node_id": schema.Int64Attribute{
+				Required: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.RequiresReplace(),
+				},
+			},
+			"project_id": schema.StringAttribute{
+				Required: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"response": schema.StringAttribute{
+				Computed: true,
+			},
 		},
 	}
 }
@@ -93,7 +128,10 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 
 func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state clientModel
-	req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	if state.ID.IsNull() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -105,7 +143,6 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 	defer httpResp.Body.Close()
-
 	resp.State.Set(ctx, &state)
 }
 
@@ -115,11 +152,11 @@ func (r *clientResource) Update(_ context.Context, _ resource.UpdateRequest, res
 
 func (r *clientResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state clientModel
-	req.State.Get(ctx, &state)
-	if state.ID.IsNull() {
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() || state.ID.IsNull() {
 		return
 	}
-	r.api.doJSON(ctx, http.MethodDelete, fmt.Sprintf("%s/Client/%s?forceDelete=true", r.api.BaseURL, state.ID.ValueString()), nil)
+	_, _ = r.api.doJSON(ctx, http.MethodDelete, fmt.Sprintf("%s/Client/%s?forceDelete=true", r.api.BaseURL, state.ID.ValueString()), nil)
 }
 
 func (r *clientResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
