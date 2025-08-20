@@ -1,4 +1,4 @@
-module github.com/hcevensen/terraform-provider-commvault
+module statisticsnorway/terraform-provider-commvault
 
 go 1.23.0
 

@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 
-	"github.com/hcevensen/terraform-provider-commvault/internal/provider"
+	"statisticsnorway/terraform-provider-commvault/internal/provider"
 )
 
 var version = "dev"
