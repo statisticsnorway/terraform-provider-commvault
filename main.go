@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 
-	"github.com/hcevensen/terraform-provider-commvaultx/internal/provider"
+	"github.com/hcevensen/terraform-provider-commvault/internal/provider"
 )
 
 var version = "dev"
@@ -21,9 +21,7 @@ func main() {
 		context.Background(),
 		provider.New(version),
 		providerserver.ServeOpts{
-			// Use your final address once you publish. For local dev,
-			// keep this address and configure dev_overrides in ~/.terraformrc
-			Address: "hashicorp.com/edu/commvaultx",
+			Address: "hashicorp.com/edu/commvault",
 			Debug:   debug,
 		},
 	); err != nil {
