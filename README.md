@@ -30,7 +30,7 @@ Currently provider leverages VM deployed in GCP that connects GCP to CommVault o
 
 git clone https://github.com/statisticsnorway/terraform-provider-commvaultx.git
 
-2. Fetch token from CommVault Login endpoint , username/password in project org-secrets secret manager : 
+2. Fetch token from CommVault Login endpoint if needed for local testing , username/password in project org-secrets secret manager : 
 
 curl -sk -X POST "https://193.160.175.103/commandcenter/api/Login" \
   -H "Content-Type: application/json" \
