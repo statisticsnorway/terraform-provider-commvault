@@ -104,7 +104,10 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 		resp.Diagnostics.AddError("Create failed", err.Error())
 		return
 	}
-	defer httpResp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(httpResp.Body)
+
 	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
 		b, _ := io.ReadAll(httpResp.Body)
 		resp.Diagnostics.AddError("Create failed", fmt.Sprintf("HTTP %d: %s", httpResp.StatusCode, b))
@@ -142,7 +145,10 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	defer httpResp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(httpResp.Body)
+
 	resp.State.Set(ctx, &state)
 }
 
