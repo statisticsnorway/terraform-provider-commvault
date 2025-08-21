@@ -1,9 +1,5 @@
 package provider
 
-type loginResponse struct {
-	Token string `xml:"token,attr"`
-}
-
 type createResponse struct {
 	Response struct {
 		ErrorCode int `json:"errorCode"`

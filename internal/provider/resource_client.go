@@ -33,7 +33,11 @@ type clientModel struct {
 	CredentialID types.Int64  `tfsdk:"credential_id"`
 	AccessNodeID types.Int64  `tfsdk:"access_node_id"`
 	ProjectID    types.String `tfsdk:"project_id"`
-	Response     types.String `tfsdk:"response"`
+
+	BucketName    types.String `tfsdk:"bucket_name"`
+	BucketProject types.String `tfsdk:"bucket_project"`
+	SubclientID   types.Int64  `tfsdk:"subclient_id"`
+	Response      types.String `tfsdk:"response"`
 }
 
 func (r *clientResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -79,6 +83,16 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"bucket_name": schema.StringAttribute{
+				Optional: true,
+			},
+			"bucket_project": schema.StringAttribute{
+				Optional: true,
+			},
+			"subclient_id": schema.Int64Attribute{
+				Optional: true,
+			},
+
 			"response": schema.StringAttribute{
 				Computed: true,
 			},
@@ -115,14 +129,51 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 	_ = json.NewDecoder(httpResp.Body).Decode(&cr)
 	id := strconv.Itoa(cr.Response.Entity.ClientID)
 
+	if !plan.BucketName.IsNull() && plan.BucketName.ValueString() != "" {
+		bucket := plan.BucketName.ValueString()
+		proj := plan.BucketProject.ValueString()
+		if proj == "" {
+			proj = plan.ProjectID.ValueString()
+		}
+
+		var subID int64
+		if !plan.SubclientID.IsNull() && plan.SubclientID.ValueInt64() > 0 {
+			subID = plan.SubclientID.ValueInt64()
+		} else {
+			var errFind error
+			subID, errFind = r.api.findDefaultSubclientID(ctx, id)
+			if errFind != nil {
+				resp.Diagnostics.AddWarning("Bucket binding: discovery error", errFind.Error())
+			}
+			if subID == 0 {
+				resp.Diagnostics.AddWarning(
+					"Bucket binding skipped",
+					"Could not discover default subclient. Provide 'subclient_id' to bind the bucket.")
+			}
+		}
+		if subID > 0 {
+			if err := r.api.bindGCSBucket(ctx, subID, bucket, proj); err != nil {
+				resp.Diagnostics.AddError("Bucket binding failed", err.Error())
+			} else {
+				resp.Diagnostics.AddWarning(
+					"Bucket bound",
+					fmt.Sprintf("Bucket %s was successfully bound to subclient %d", bucket, subID),
+				)
+			}
+		}
+	}
+
 	resp.State.Set(ctx, &clientModel{
-		ID:           types.StringValue(id),
-		Name:         plan.Name,
-		PlanID:       plan.PlanID,
-		CredentialID: plan.CredentialID,
-		AccessNodeID: plan.AccessNodeID,
-		ProjectID:    plan.ProjectID,
-		Response:     types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, id, plan.Name.ValueString())),
+		ID:            types.StringValue(id),
+		Name:          plan.Name,
+		PlanID:        plan.PlanID,
+		CredentialID:  plan.CredentialID,
+		AccessNodeID:  plan.AccessNodeID,
+		ProjectID:     plan.ProjectID,
+		BucketName:    plan.BucketName,
+		BucketProject: plan.BucketProject,
+		SubclientID:   plan.SubclientID,
+		Response:      types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, id, plan.Name.ValueString())),
 	})
 }
 
