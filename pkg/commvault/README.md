@@ -9,4 +9,14 @@ java -jar modules/swagger-codegen-cli/target/swagger-codegen-cli.jar generate \
    -o "<path to repo>/terraform-provider-commvault/pkg/commvault/apiclient" --additional-properties packageName=apiclient
 ```
 
-
+Manual changes after generation:
+- Rename the file `api_blackout_windows.go` -> `api_blackoutwindows.go`, since go do not build files with `windows.go` suffix unless we build on windows platform
+- Changed content of `model_laptops_list.go` ->
+  ```go
+    package apiclient
+    
+    type LaptopsList struct {
+	    LaptopsListWebConsole   []LaptopsWebConsole
+	    LaptopsListAdminConsole []LaptopsAdminConsole
+    }
+    ```
