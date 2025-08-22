@@ -44,7 +44,7 @@ func (c *APIClient) Login(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", fmt.Errorf("login: non-2xx status %d", resp.StatusCode)
@@ -84,27 +84,13 @@ func (c *APIClient) doJSON(ctx context.Context, method, url string, body any) (*
 	return c.HTTP.Do(req)
 }
 
-func (c *APIClient) doXML(ctx context.Context, method, url string, xmlBody string) (*http.Response, error) {
-	buf := bytes.NewBufferString(xmlBody)
-	req, err := http.NewRequestWithContext(ctx, method, url, buf)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/xml")
-	req.Header.Set("Content-Type", "application/xml")
-	if c.Token != "" {
-		req.Header.Set("Authtoken", c.Token)
-	}
-	return c.HTTP.Do(req)
-}
-
 func (c *APIClient) findDefaultSubclientID(ctx context.Context, clientID string) (int64, error) {
 	u := fmt.Sprintf("%s/Subclient?clientId=%s", c.BaseURL, clientID)
 	resp, err := c.doJSON(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusNotFound {
 		return 0, nil
@@ -136,12 +122,12 @@ func (c *APIClient) findDefaultSubclientID(ctx context.Context, clientID string)
 	}
 
 	var shape2 []ent
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	resp, err = c.doJSON(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if err := json.NewDecoder(resp.Body).Decode(&shape2); err == nil {
 		for _, s := range shape2 {
 			if s.SubClientEntity.SubclientName == "default" && s.SubClientEntity.AppName == "Cloud Apps" {
@@ -180,7 +166,7 @@ func (c *APIClient) bindGCSBucket(ctx context.Context, subclientID int64, bucket
 	if err != nil {
 		return fmt.Errorf("bind bucket request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(resp.Body)
