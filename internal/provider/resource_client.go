@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"statisticsnorway/terraform-provider-commvault/pkg/commvault/apiclient"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -24,7 +25,10 @@ var (
 
 func NewClientResource() resource.Resource { return &clientResource{} }
 
-type clientResource struct{ api *APIClient }
+type clientResource struct {
+	api   *apiclient.APIClient
+	token string
+}
 
 type clientModel struct {
 	ID           types.String `tfsdk:"id"`
@@ -100,10 +104,23 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 	}
 }
 
-func (r *clientResource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
-	if req.ProviderData != nil {
-		r.api = req.ProviderData.(*APIClient)
+func (r *clientResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
 	}
+
+	providerData, ok := req.ProviderData.(*CommvaultProviderData)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Resource Configure Type",
+			"Please report this issue to the provider developers.",
+		)
+
+		return
+	}
+
+	r.api = providerData.ApiClient
+	r.token = providerData.Token
 }
 
 func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -113,7 +130,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	httpResp, err := r.api.doJSON(ctx, http.MethodPost, r.api.BaseURL+"/Client", buildPayload(plan))
+	httpResp, err := r.providerData.doJSON(ctx, http.MethodPost, r.providerData.BaseURL+"/Client", buildPayload(plan))
 	if err != nil {
 		resp.Diagnostics.AddError("Create failed", err.Error())
 		return
@@ -191,7 +208,7 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	httpResp, err := r.api.doJSON(ctx, http.MethodGet, fmt.Sprintf("%s/Client/%s", r.api.BaseURL, state.ID.ValueString()), nil)
+	httpResp, err := r.providerData.doJSON(ctx, http.MethodGet, fmt.Sprintf("%s/Client/%s", r.providerData.BaseURL, state.ID.ValueString()), nil)
 	if err != nil || httpResp.StatusCode == http.StatusNotFound {
 		resp.State.RemoveResource(ctx)
 		return
@@ -213,7 +230,7 @@ func (r *clientResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() || state.ID.IsNull() {
 		return
 	}
-	_, _ = r.api.doJSON(ctx, http.MethodDelete, fmt.Sprintf("%s/Client/%s?forceDelete=true", r.api.BaseURL, state.ID.ValueString()), nil)
+	_, _ = r.providerData.doJSON(ctx, http.MethodDelete, fmt.Sprintf("%s/Client/%s?forceDelete=true", r.providerData.BaseURL, state.ID.ValueString()), nil)
 }
 
 func (r *clientResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
