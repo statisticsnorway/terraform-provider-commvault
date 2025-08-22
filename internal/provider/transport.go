@@ -3,13 +3,15 @@ package provider
 import (
 	"crypto/tls"
 	"net/http"
+	"time"
 )
 
-func NewHTTPClientInsecure() *http.Client {
+func NewHTTPClient(timeout time.Duration, skipVerifyTLS bool) *http.Client {
 	return &http.Client{
+		Timeout: timeout,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: skipVerifyTLS,
 			},
 		},
 	}

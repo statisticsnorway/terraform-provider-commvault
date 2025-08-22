@@ -20,3 +20,11 @@ Manual changes after generation:
 	    LaptopsListAdminConsole []LaptopsAdminConsole
     }
     ```
+  
+
+## Other
+
+Why have apiclient as a own package?
+We want the API client to be able to have a different lifecycle then the rest of the repo. 
+Another reason is that we don't want the overhead of the whole collection of packages when we import this module from another project.
+See: https://go.dev/wiki/Modules#faqs--multi-module-repositories
