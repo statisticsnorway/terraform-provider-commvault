@@ -9,5 +9,5 @@
 package sp36
 
 type InlineResponse20052 struct {
-	Response []Object `json:"response,omitempty"`
+	Response interface{} `json:"response,omitempty"`
 }

@@ -16,7 +16,7 @@ Manual changes after generation:
 - Rename the file `api_blackout_windows.go` -> `api_blackoutwindows.go`, since go do not build files with `windows.go` suffix unless we build on windows platform
 - Changed content of `model_laptops_list.go` ->
   ```go
-    package apiclient
+    package apiexplorer
     
     type LaptopsList struct {
 	    LaptopsListWebConsole   []LaptopsWebConsole
@@ -36,6 +36,21 @@ java -jar modules/swagger-codegen-cli/target/swagger-codegen-cli.jar generate \
    -l go \
    -o "<path to repo>/terraform-provider-commvault/pkg/commvault/apiclient/apiexplorer" --additional-properties packageName=apiclient
 ```
+
+Manual changes after generation:
+- Changed content of type in `sp36/model_inline_response_200_52.go` ->
+  ```go
+  type InlineResponse20052 struct {
+	Response interface{} `json:"response,omitempty"`
+  }
+  ```
+- Changed content of type in `sp36/model_inline_response_200_29.go` ->
+  ```go
+    type InlineResponse20029 struct {
+	    CommcellList interface{} `json:"commcellList,omitempty"`
+	    Error_ interface{} `json:"error,omitempty"`
+    }
+    ```
 
 
 ## Other

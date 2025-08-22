@@ -9,6 +9,6 @@
 package sp36
 
 type InlineResponse20029 struct {
-	CommcellList []interface{} `json:"commcellList,omitempty"`
-	Error_ *Object `json:"error,omitempty"`
+	CommcellList interface{} `json:"commcellList,omitempty"`
+	Error_       interface{} `json:"error,omitempty"`
 }

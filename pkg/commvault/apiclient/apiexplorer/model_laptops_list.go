@@ -9,6 +9,6 @@
 package apiexplorer
 
 type LaptopsList struct {
-    LaptopsListWebConsole
-    LaptopsListAdminConsole
+	LaptopsListWebConsole   []LaptopsWebConsole
+	LaptopsListAdminConsole []LaptopsAdminConsole
 }
