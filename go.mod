@@ -1,13 +1,17 @@
 module statisticsnorway/terraform-provider-commvault
 
-go 1.25
+go 1.25.0
+
+replace statisticsnorway/terraform-provider-commvault/pkg/commvault/apiclient => ./pkg/commvault/apiclient
 
 require (
 	github.com/hashicorp/terraform-plugin-framework v1.15.1
 	github.com/hashicorp/terraform-plugin-log v0.9.0
+	statisticsnorway/terraform-provider-commvault/pkg/commvault/apiclient v0.0.0-00010101000000-000000000000
 )
 
 require (
+	github.com/antihax/optional v1.0.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
@@ -24,6 +28,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c // indirect
