@@ -16,8 +16,9 @@ The provider leverages VM deployed in GCP that connects GCP to CommVault on prem
 
 ### Prerequisites for development locally  
 
-- Terraform >= 1.0
+- Terraform
 - Go (for building from source)
+- [golangci-lint](https://golangci-lint.run/)
 - Access to a Commvault Command Center API endpoint.
 - Valid Commvault credentials.
 
@@ -46,7 +47,7 @@ VM in GCP is configured in: https://github.com/statisticsnorway/terraform-ssb-gc
 
 ### Terraform provider
 
-1. See description at (terraform own tutorial)[https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider#prepare-terraform-for-local-provider-install]
+1. See description at [terraform own tutorial](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider#prepare-terraform-for-local-provider-install)
    The key in `dev_overrides` block should be `statisticsnorway/commvault`, like:
    ```hcl
      dev_overrides {
