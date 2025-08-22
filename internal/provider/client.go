@@ -154,30 +154,51 @@ func (c *APIClient) findDefaultSubclientID(ctx context.Context, clientID string)
 }
 
 func (c *APIClient) bindGCSBucket(ctx context.Context, subclientID int64, bucketName, projectName string) error {
-	xmlReq := fmt.Sprintf(
-		`<App_UpdateSubClientPropertiesRequest>
-  <subClientProperties>
-    <subClientEntity subclientId="%d"/>
-    <useLocalContent>1</useLocalContent>
-    <cloudAppsSubClientProp instanceType="20">
-      <objectStorageSubclient>
-        <contentOperationType>2</contentOperationType>
-        <content>
-          <gcpContent bucketName="%s" projectName="%s"/>
-        </content>
-      </objectStorageSubclient>
-    </cloudAppsSubClientProp>
-  </subClientProperties>
-</App_UpdateSubClientPropertiesRequest>`, subclientID, bucketName, projectName)
+	payload := map[string]any{
+		"subClientProperties": map[string]any{
+			"subClientEntity": map[string]any{"subclientId": subclientID},
+			"useLocalContent": true,
+			"cloudAppsSubClientProp": map[string]any{
+				"instanceType": 20,
+				"objectStorageSubclient": map[string]any{
+					"contentOperationType": 2,
+					"content": []any{
+						map[string]any{
+							"gcpContent": map[string]any{
+								"bucketName":  bucketName,
+								"projectName": projectName,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
 
-	resp, err := c.doXML(ctx, http.MethodPost, fmt.Sprintf("%s/Subclient/%d", c.BaseURL, subclientID), xmlReq)
+	url := fmt.Sprintf("%s/Subclient/%d", c.BaseURL, subclientID)
+	resp, err := c.doJSON(ctx, http.MethodPost, url, payload)
 	if err != nil {
-		return err
+		return fmt.Errorf("bind bucket request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("bind bucket: HTTP %d: %s", resp.StatusCode, string(b))
 	}
+	var r struct {
+		Response struct {
+			WarningCode    int    `json:"warningCode"`
+			ErrorCode      int    `json:"errorCode"`
+			WarningMessage string `json:"warningMessage"`
+		} `json:"response"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&r)
+
+	if r.Response.ErrorCode != 0 {
+		return fmt.Errorf("bind bucket: Commvault errorCode=%d, warningCode=%d, msg=%q",
+			r.Response.ErrorCode, r.Response.WarningCode, r.Response.WarningMessage)
+	}
+
 	return nil
 }
