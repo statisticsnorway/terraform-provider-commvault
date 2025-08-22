@@ -12,6 +12,7 @@ java -jar modules/swagger-codegen-cli/target/swagger-codegen-cli.jar generate \
 ```
 
 Manual changes after generation:
+- Created file `client_login.go` which implements API towards `/login`
 - Rename the file `api_blackout_windows.go` -> `api_blackoutwindows.go`, since go do not build files with `windows.go` suffix unless we build on windows platform
 - Changed content of `model_laptops_list.go` ->
   ```go
