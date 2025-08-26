@@ -48,7 +48,7 @@ type EntityInfo struct {
 
 // -------------------------------------------------------
 
-type SubclientUpdateRequest struct {
+type SubclientCreateOrUpdateRequestAndResponse struct {
 	SubclientProperties SubclientProperties `json:"subClientProperties"`
 }
 
