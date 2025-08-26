@@ -2,9 +2,7 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"statisticsnorway/terraform-provider-commvault/pkg/commvault/apiclient"
 	"strconv"
@@ -26,8 +24,7 @@ var (
 func NewClientResource() resource.Resource { return &clientResource{} }
 
 type clientResource struct {
-	api   *apiclient.APIClient
-	token string
+	api *apiclient.APIClient
 }
 
 type clientModel struct {
@@ -120,7 +117,6 @@ func (r *clientResource) Configure(_ context.Context, req resource.ConfigureRequ
 	}
 
 	r.api = providerData.ApiClient
-	r.token = providerData.Token
 }
 
 func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -130,61 +126,52 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	httpResp, err := r.providerData.doJSON(ctx, http.MethodPost, r.providerData.BaseURL+"/Client", buildPayload(plan))
+	createResponse, _, err := r.api.ClientApi.Create(ctx, buildCreateClientPayload(plan))
 	if err != nil {
 		resp.Diagnostics.AddError("Create failed", err.Error())
 		return
 	}
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(httpResp.Body)
 
-	if httpResp.StatusCode < 200 || httpResp.StatusCode >= 300 {
-		b, _ := io.ReadAll(httpResp.Body)
-		resp.Diagnostics.AddError("Create failed", fmt.Sprintf("HTTP %d: %s", httpResp.StatusCode, b))
-		return
-	}
-
-	var cr createResponse
-	_ = json.NewDecoder(httpResp.Body).Decode(&cr)
-	id := strconv.Itoa(cr.Response.Entity.ClientID)
+	clientId := strconv.Itoa(createResponse.Response.Entity.ClientID)
 
 	if !plan.BucketName.IsNull() && plan.BucketName.ValueString() != "" {
 		bucket := plan.BucketName.ValueString()
-		proj := plan.BucketProject.ValueString()
-		if proj == "" {
-			proj = plan.ProjectID.ValueString()
+		gcpProject := plan.BucketProject.ValueString()
+		if gcpProject == "" {
+			gcpProject = plan.ProjectID.ValueString()
 		}
 
-		var subID int64
+		var subID int
 		if !plan.SubclientID.IsNull() && plan.SubclientID.ValueInt64() > 0 {
-			subID = plan.SubclientID.ValueInt64()
+			subID = int(plan.SubclientID.ValueInt64())
 		} else {
-			var errFind error
-			subID, errFind = r.api.findDefaultSubclientID(ctx, id)
-			if errFind != nil {
-				resp.Diagnostics.AddWarning("Bucket binding: discovery error", errFind.Error())
+			getResponse, httpResponse, err := r.api.SubclientApi.Get(ctx, clientId)
+			if err != nil {
+				resp.Diagnostics.AddError(fmt.Sprintf("Failed fetching subclient for client id: %s", clientId), err.Error())
+				return
 			}
-			if subID == 0 {
-				resp.Diagnostics.AddWarning(
-					"Bucket binding skipped",
-					"Could not discover default subclient. Provide 'subclient_id' to bind the bucket.")
+			subID = getResponse.SubClientProperties[0].SubClientEntity.SubclientId
+
+			if httpResponse.StatusCode == http.StatusNotFound || subID == 0 {
+				resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id %s. Got subId %d and http status code %d", clientId, subID, httpResponse.StatusCode))
+				return
+
 			}
 		}
-		if subID > 0 {
-			if err := r.api.bindGCSBucket(ctx, subID, bucket, proj); err != nil {
-				resp.Diagnostics.AddError("Bucket binding failed", err.Error())
-			} else {
-				resp.Diagnostics.AddWarning(
-					"Bucket bound",
-					fmt.Sprintf("Bucket %s was successfully bound to subclient %d", bucket, subID),
-				)
-			}
+
+		_, h, err := r.api.SubclientApi.Create(ctx, buildCreateSubclientPayload(subID, bucket, gcpProject))
+		if err != nil {
+			resp.Diagnostics.AddError(fmt.Sprintf("Failed to create subclient for subclientId: %d, bucket %s, project: %s", subID, bucket, gcpProject), err.Error())
+			return
+		}
+		if h.StatusCode != http.StatusOK {
+			resp.Diagnostics.AddError(fmt.Sprintf("Failed to create subclient for subclientId: %d, bucket %s, project: %s, http code: %d", subID, bucket, gcpProject, h.StatusCode), h.Status)
+			return
 		}
 	}
 
 	resp.State.Set(ctx, &clientModel{
-		ID:            types.StringValue(id),
+		ID:            types.StringValue(clientId),
 		Name:          plan.Name,
 		PlanID:        plan.PlanID,
 		CredentialID:  plan.CredentialID,
@@ -193,7 +180,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 		BucketName:    plan.BucketName,
 		BucketProject: plan.BucketProject,
 		SubclientID:   plan.SubclientID,
-		Response:      types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, id, plan.Name.ValueString())),
+		Response:      types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, clientId, plan.Name.ValueString())),
 	})
 }
 
@@ -208,14 +195,16 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	httpResp, err := r.providerData.doJSON(ctx, http.MethodGet, fmt.Sprintf("%s/Client/%s", r.providerData.BaseURL, state.ID.ValueString()), nil)
+	clientId := state.ID.ValueString()
+	getResponse, httpResp, err := r.api.ClientApi.GetById(ctx, clientId)
 	if err != nil || httpResp.StatusCode == http.StatusNotFound {
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(httpResp.Body)
+	if len(getResponse.ClientProperties) == 0 || strconv.Itoa(getResponse.ClientProperties[0].Client.ClientEntity.ClientId) != clientId {
+		gotClientId := strconv.Itoa(getResponse.ClientProperties[0].Client.ClientEntity.ClientId)
+		resp.Diagnostics.AddError(fmt.Sprintf("Client id did not match whats in state. Got: %s, expected: %s", gotClientId, clientId), "Client property missing")
+	}
 
 	resp.State.Set(ctx, &state)
 }
@@ -230,54 +219,93 @@ func (r *clientResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() || state.ID.IsNull() {
 		return
 	}
-	_, _ = r.providerData.doJSON(ctx, http.MethodDelete, fmt.Sprintf("%s/Client/%s?forceDelete=true", r.providerData.BaseURL, state.ID.ValueString()), nil)
+
+	//TODO: implement deletion proection, as deletion of client might delete all backup data associated with it as well
+
+	clientId := state.ID.ValueString()
+	_, httpResponse, err := r.api.ClientApi.Delete(ctx, clientId, true)
+	if err != nil {
+		resp.Diagnostics.AddError("Error occured during delete", err.Error())
+		return
+	}
+	if httpResponse.StatusCode != http.StatusOK {
+		resp.Diagnostics.AddError("Unexpected http status code after delete", httpResponse.Status)
+		return
+	}
 }
 
 func (r *clientResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func buildPayload(plan clientModel) map[string]any {
-	return map[string]any{
-		"clientInfo": map[string]any{
-			"clientType": 15,
-			"cloudClonnectorProperties": map[string]any{
-				"instance": map[string]any{
-					"cloudAppsInstance": map[string]any{
-						"credentialType": "GOOGLE_SERVICE_ACCOUNT",
-						"generalCloudProperties": map[string]any{
-							"credentials": map[string]any{
-								"credentialId": plan.CredentialID.ValueInt64(),
+func buildCreateClientPayload(plan clientModel) *apiclient.ClientCreateRequest {
+	return &apiclient.ClientCreateRequest{
+		ClientInfo: apiclient.ClientInfo{
+			ClientType: 15,
+			CloudConnectorProperties: apiclient.CloudConnectorProperties{
+				Instance: apiclient.Instance{
+					CloudAppsInstance: apiclient.CloudAppsInstance{
+						CredentialType: "GOOGLE_SERVICE_ACCOUNT",
+						GeneralCloudProperties: apiclient.GeneralCloudProperties{
+							Credentials: apiclient.Credentials{
+								CredentialID: plan.CredentialID.ValueInt64(),
 							},
-							"memberServers": []map[string]any{{
-								"client": map[string]any{
-									"_type_":   3,
-									"clientId": plan.AccessNodeID.ValueInt64(),
+							MemberServers: []apiclient.MemberServer{
+								{
+									Client: apiclient.ClientCreateRequestClient{
+										Type:     3,
+										ClientID: plan.AccessNodeID.ValueInt64(),
+									},
 								},
-							}},
-							"numberOfBackupStreams": 1,
+							},
+							NumberOfBackupStreams: 1,
 						},
-						"googleCloudInstance": map[string]any{
-							"GCPProjectId": plan.ProjectID.ValueString(),
-							"serverName":   "storage.googleapis.com",
+						GoogleCloudInstance: apiclient.GoogleCloudInstance{
+							GCPProjectID: plan.ProjectID.ValueString(),
+							ServerName:   "storage.googleapis.com",
 						},
-						"instanceType":            "GOOGLE_CLOUD",
-						"instanceTypeDisplayName": "Google Cloud",
+						InstanceType:            "GOOGLE_CLOUD",
+						InstanceTypeDisplayName: "Google Cloud",
 					},
-					"instance": map[string]any{
-						"applicationId": 134,
-						"commCellId":    2,
-						"instanceName":  plan.Name.ValueString(),
+					Instance: apiclient.InstanceDetails{
+						ApplicationID: 123,
+						CommCellID:    2,
+						InstanceName:  plan.Name.ValueString(),
 					},
 				},
-				"instanceType": "GOOGLE_CLOUD",
+				InstanceType: "GOOGLE_CLOUD",
 			},
-			"plan": map[string]any{
-				"planId": plan.PlanID.ValueInt64(),
+			Plan: apiclient.ClientCreateRequestPlan{
+				PlanID: plan.PlanID.ValueInt64(),
 			},
 		},
-		"entity": map[string]any{
-			"clientName": plan.Name.ValueString(),
+		Entity: apiclient.Entity{
+			ClientName: plan.Name.ValueString(),
+		},
+	}
+}
+
+func buildCreateSubclientPayload(subclientID int, bucketName, projectName string) *apiclient.SubclientCreateOrUpdateRequestAndResponse {
+	return &apiclient.SubclientCreateOrUpdateRequestAndResponse{
+		SubclientProperties: apiclient.SubclientProperties{
+			SubclientEntity: apiclient.SubclientUpdateRequestClientEntity{
+				SubclientID: subclientID,
+			},
+			UseLocalContent: true,
+			CloudAppsSubClientProp: apiclient.CloudAppsSubClientProp{
+				InstanceType: 20,
+				ObjectStorageSubclient: apiclient.ObjectStorageSubclient{
+					ContentOperationType: 2,
+					Content: []apiclient.Content{
+						{
+							GCPContent: apiclient.GCPContent{
+								BucketName:  bucketName,
+								ProjectName: projectName,
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }

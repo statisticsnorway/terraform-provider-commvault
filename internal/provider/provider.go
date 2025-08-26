@@ -5,7 +5,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"os"
-	commvault "statisticsnorway/terraform-provider-commvault/pkg/commvault/apiclient/sp36"
+	"statisticsnorway/terraform-provider-commvault/pkg/commvault/apiclient"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -30,8 +30,7 @@ type commvaultProviderModel struct {
 }
 
 type CommvaultProviderData struct {
-	ApiClient *commvault.APIClient
-	Token     string
+	ApiClient *apiclient.APIClient
 }
 
 func (p *commvaultProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -89,15 +88,15 @@ func (p *commvaultProvider) Configure(ctx context.Context, req provider.Configur
 		return
 	}
 
-	apiClient := commvault.NewAPIClient(&commvault.Configuration{
+	apiClient := apiclient.NewAPIClient(&apiclient.Configuration{
 		BasePath: first(config.BaseURL.ValueString(), os.Getenv("COMMVAULT_BASE_URL")),
 		// TODO: Add team as part of user agent
 		UserAgent:  "terraform-provider-commvault@" + p.version,
 		HTTPClient: NewHTTPClient(time.Second*10, true),
-	}).DefaultApi
+	})
 
 	tflog.Info(ctx, "Fetching token")
-	loginResponse, _, err := apiClient.Login(ctx, &apiclient.LoginOpts{
+	loginResponse, _, err := apiClient.LoginApi.Login(ctx, &apiclient.LoginRequest{
 		Username: first(config.Username.ValueString(), os.Getenv("COMMVAULT_USERNAME")),
 		Password: first(config.Password.ValueString(), os.Getenv("COMMVAULT_PASSWORD")),
 	})
@@ -106,10 +105,10 @@ func (p *commvaultProvider) Configure(ctx context.Context, req provider.Configur
 		return
 	}
 	tflog.Info(ctx, "Login OK")
+	apiClient.SetToken(loginResponse.Token)
 
 	providerData := &CommvaultProviderData{
 		ApiClient: apiClient,
-		Token:     loginResponse.Token,
 	}
 	resp.ResourceData = providerData
 	resp.DataSourceData = providerData
