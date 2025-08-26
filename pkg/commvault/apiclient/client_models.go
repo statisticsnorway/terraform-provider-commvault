@@ -672,3 +672,21 @@ type ClientCreateResponse struct {
 		} `json:"entity"`
 	} `json:"response"`
 }
+
+// --------------------------------------------------
+type ClientDeleteResponse struct {
+	Processinginstructioninfo Processinginstructioninfo `json:"processinginstructioninfo"`
+	Response                  struct {
+		ErrorCode int `json:"errorCode"`
+		Entity    struct {
+			ClientID          int    `json:"clientId"`
+			ClientName        string `json:"clientName"`
+			SrmReportSet      int    `json:"srmReportSet,omitempty"`
+			Type              int    `json:"type,omitempty"`
+			SrmReportType     int    `json:"srmReportType,omitempty"`
+			ClientSidePackage bool   `json:"clientSidePackage,omitempty"`
+			Type0             int    `json:"_type_,omitempty"`
+			ConsumeLicense    bool   `json:"consumeLicense,omitempty"`
+		} `json:"entity"`
+	} `json:"response"`
+}
