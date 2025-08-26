@@ -1,5 +1,12 @@
 package apiclient
 
+type LoginRequest struct {
+	Username string
+	Password string
+}
+
+// ------------------------------------------------------------------------
+
 type LoginResponseCustomerManaged struct {
 	AliasName           string `json:"aliasName"`
 	UserGUID            string `json:"userGUID"`

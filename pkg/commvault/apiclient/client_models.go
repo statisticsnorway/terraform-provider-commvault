@@ -150,7 +150,7 @@ type GeneralCloudProperties struct {
 }
 
 type Credentials struct {
-	CredentialID string `json:"credentialId"`
+	CredentialID int64 `json:"credentialId"`
 }
 
 type MemberServer struct {
@@ -158,8 +158,8 @@ type MemberServer struct {
 }
 
 type ClientCreateRequestClient struct {
-	Type     int    `json:"_type_"`
-	ClientID string `json:"clientId"`
+	Type     int   `json:"_type_"`
+	ClientID int64 `json:"clientId"`
 }
 
 type GoogleCloudInstance struct {

@@ -43,6 +43,8 @@ type APIClient struct {
 	token string // the Token
 
 	// API Services
+	ClientApi *ClientApiService
+
 	LoginApi *LoginApiService
 
 	SubclientApi *SubclientApiService
@@ -64,6 +66,7 @@ func NewAPIClient(cfg *Configuration) *APIClient {
 	c.common.client = c
 
 	// API Services
+	c.ClientApi = (*ClientApiService)(&c.common)
 	c.LoginApi = (*LoginApiService)(&c.common)
 	c.SubclientApi = (*SubclientApiService)(&c.common)
 
@@ -122,11 +125,6 @@ func typeCheckParameter(obj interface{}, expected string, name string) error {
 	return nil
 }
 
-// callAPI do the request.
-func (c *APIClient) callAPI(request *http.Request) (*http.Response, error) {
-	return c.cfg.HTTPClient.Do(request)
-}
-
 func prepareAndCallApiJSON[T any](
 	ctx context.Context,
 	client *APIClient,
@@ -165,9 +163,19 @@ func prepareAndCallApiJSON[T any](
 	return decodeAPIResponse[T](client, response, responseBody)
 }
 
-// Change base path to allow switching to mocks
+// ChangeBasePath to allow switching to mocks
 func (c *APIClient) ChangeBasePath(path string) {
 	c.cfg.BasePath = path
+}
+
+// SetToken will set a token which will be used for all the next calls by this API client
+func (c *APIClient) SetToken(token string) {
+	c.token = token
+}
+
+// callAPI do the request.
+func (c *APIClient) callAPI(request *http.Request) (*http.Response, error) {
+	return c.cfg.HTTPClient.Do(request)
 }
 
 // prepareRequest build the request
