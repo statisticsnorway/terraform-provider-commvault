@@ -676,7 +676,7 @@ type ClientCreateResponse struct {
 // --------------------------------------------------
 type ClientDeleteResponse struct {
 	Processinginstructioninfo Processinginstructioninfo `json:"processinginstructioninfo"`
-	Response                  struct {
+	Response                  []struct {
 		ErrorCode int `json:"errorCode"`
 		Entity    struct {
 			ClientID          int    `json:"clientId"`

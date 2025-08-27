@@ -38,9 +38,8 @@ func (a *ClientApiService) Create(ctx context.Context, createRequest *ClientCrea
 // https://api.commvault.com/docs/SP38/api/cv/ClientOperations/delete-client-client-id/
 // This operation deletes a client entity.
 // This operation also deletes any backup data that is associated with the client.
-func (a *ClientApiService) Delete(ctx context.Context, clientId string, forceDelete bool) (ClientCreateResponse, *http.Response, error) {
-	return prepareAndCallApiJSON[ClientCreateResponse](ctx, a.client, http.MethodPost, "/client", url.Values{
-		"client_id":    {clientId},
+func (a *ClientApiService) Delete(ctx context.Context, clientId string, forceDelete bool) (ClientDeleteResponse, *http.Response, error) {
+	return prepareAndCallApiJSON[ClientDeleteResponse](ctx, a.client, http.MethodDelete, "/client/"+clientId, url.Values{
 		"force_delete": {strconv.FormatBool(forceDelete)},
 	}, nil)
 }
