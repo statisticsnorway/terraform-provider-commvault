@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"os"
@@ -88,14 +89,14 @@ func (p *commvaultProvider) Configure(ctx context.Context, req provider.Configur
 		return
 	}
 
+	basePath := first(config.BaseURL.ValueString(), os.Getenv("COMMVAULT_BASE_URL"))
 	apiClient := apiclient.NewAPIClient(&apiclient.Configuration{
-		BasePath: first(config.BaseURL.ValueString(), os.Getenv("COMMVAULT_BASE_URL")),
-		// TODO: Add team as part of user agent
+		BasePath:   basePath,
 		UserAgent:  "terraform-provider-commvault@" + p.version,
-		HTTPClient: NewHTTPClient(time.Second*10, true),
+		HTTPClient: NewHTTPClient(120*time.Second, true),
 	})
 
-	tflog.Info(ctx, "Fetching token")
+	tflog.Info(ctx, fmt.Sprintf("Login to API at: %s", basePath))
 	loginResponse, _, err := apiClient.LoginApi.Login(ctx, &apiclient.LoginRequest{
 		Username: first(config.Username.ValueString(), os.Getenv("COMMVAULT_USERNAME")),
 		Password: first(config.Password.ValueString(), os.Getenv("COMMVAULT_PASSWORD")),
