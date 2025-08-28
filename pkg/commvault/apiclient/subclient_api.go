@@ -33,3 +33,9 @@ func (a *SubclientApiService) Create(ctx context.Context, createRequest *Subclie
 func (a *SubclientApiService) Update(ctx context.Context, subclientId string, updateRequest *SubclientCreateOrUpdateRequestAndResponse) (SubclientCreateOrUpdateRequestAndResponse, *http.Response, error) {
 	return prepareAndCallApiJSON[SubclientCreateOrUpdateRequestAndResponse](ctx, a.client, http.MethodPost, "/subclient/"+subclientId, nil, updateRequest)
 }
+
+// Delete Subclient
+// https://api.commvault.com/docs/SP36/api/cv/SubclientOperations/delete-a-subclient/#delete-a-subclient
+func (a *SubclientApiService) Delete(ctx context.Context, subclientId string) (SubclientDeleteResponse, *http.Response, error) {
+	return prepareAndCallApiJSON[SubclientDeleteResponse](ctx, a.client, http.MethodDelete, "/subclient/"+subclientId, nil, nil)
+}

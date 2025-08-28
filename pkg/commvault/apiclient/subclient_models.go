@@ -80,3 +80,11 @@ type GCPContent struct {
 	BucketName  string `json:"bucketName"`
 	ProjectName string `json:"projectName"`
 }
+
+// --------------------------------------------------
+type SubclientDeleteResponse struct {
+	Processinginstructioninfo Processinginstructioninfo `json:"processinginstructioninfo"`
+	Response                  []struct {
+		ErrorCode int `json:"errorCode"`
+	} `json:"response"`
+}
