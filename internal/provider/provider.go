@@ -120,7 +120,9 @@ func (p *commvaultProvider) Resources(_ context.Context) []func() resource.Resou
 }
 
 func (p *commvaultProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return nil
+	return []func() datasource.DataSource{
+		NewClientDataSource,
+	}
 }
 
 func first(vals ...string) string {
