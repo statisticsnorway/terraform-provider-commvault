@@ -28,6 +28,13 @@ func (a *ClientApiService) GetById(ctx context.Context, clientId string) (Client
 	return prepareAndCallApiJSON[ClientGetByIdResponse](ctx, a.client, http.MethodGet, "/client/"+clientId, nil, nil)
 }
 
+// GetByName
+// This operation returns the properties associated with a client.
+// https://api.commvault.com/docs/SP36/api/cv/ClientOperations/get-client-properties-by-name/
+func (a *ClientApiService) GetByName(ctx context.Context, clientName string) (ClientGetByIdResponse, *http.Response, error) {
+	return prepareAndCallApiJSON[ClientGetByIdResponse](ctx, a.client, http.MethodGet, "/client/byName(clientName='"+clientName+"')", nil, nil)
+}
+
 // Create a new client
 // TODO: Find documentation for endpoint
 func (a *ClientApiService) Create(ctx context.Context, createRequest *ClientCreateRequest) (ClientCreateResponse, *http.Response, error) {
