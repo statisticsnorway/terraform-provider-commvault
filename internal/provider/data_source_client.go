@@ -103,7 +103,7 @@ func (d *clientDataSource) Read(ctx context.Context, request datasource.ReadRequ
 	}
 
 	if len(clientResponse.ClientProperties) == 0 {
-		response.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to get client. Empty response"))
+		response.Diagnostics.AddError("Client Error", "Unable to get client. Empty response")
 		return
 	}
 
