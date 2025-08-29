@@ -31,17 +31,6 @@ The provider leverages VM deployed in GCP that connects GCP to CommVault on prem
 | Plan      | A scheduled run of a collection of subclient. The subclients does not need to belong to same client.         |
 | Job       | A one of run of a backup                                                                                     |
 
-```mermaid
-graph
-    Gcp[VM in GCP] -- Save backup --> Ground[Commvault backup server on prem]
-    CommandCenter[Commvault API and web-GUI] -- Configure and trigger backup --> Ground
-    CommandCenter[Commvault API and web-GUI] -- Configure and trigger backup --> Gcp
-    Gcp -- Read and backup --> GcpBucket((Buckets in GCP))
-
-
-```
-
-VM in GCP is configured in: https://github.com/statisticsnorway/terraform-ssb-gcp-org/blob/main/backup.tf
 
 ## Local development
 
@@ -61,13 +50,13 @@ VM in GCP is configured in: https://github.com/statisticsnorway/terraform-ssb-gc
 
 To run requests against the API using the API Explorer (or curl):
 
-1. The Commvault Api Explorer is available over VPN on IP: https://193.160.175.103/webconsole/sandbox/apiexplorer . The
-   admin GUI is also avaiable on path `/commandcenter`
+1. The Commvault Api Explorer is available over VPN on IP: `https://<commandcenter-domain>/webconsole/sandbox/apiexplorer` . The
+   admin GUI is also available on path `/commandcenter`
 2. Username and password are stored in the `org-secrets` GCP-project
 3. Base64 encode the password.
 4. Get access token by issuing a request to:
     ```shell
-    curl -sk -X POST "https://193.160.175.103/commandcenter/api/Login" -H "Content-Type: application/json" \
+    curl -sk -X POST "https://<commandcenter-domain>/commandcenter/api/Login" -H "Content-Type: application/json" \
     -d '{
     "username": "<username in clear text>",
     "password": "<base64 encoded password>",
