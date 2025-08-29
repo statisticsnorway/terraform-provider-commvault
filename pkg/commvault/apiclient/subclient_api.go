@@ -18,7 +18,7 @@ type SubclientApiService service
 // https://api.commvault.com/docs/SP36/api/cv/SubclientOperations/get-subclient/
 func (a *SubclientApiService) Get(ctx context.Context, clientId string) (SubclientGetResponse, *http.Response, error) {
 	return prepareAndCallApiJSON[SubclientGetResponse](ctx, a.client, http.MethodGet, "/subclient", url.Values{
-		"client_id": {clientId},
+		"clientId": {clientId},
 	}, nil)
 }
 
