@@ -59,7 +59,11 @@ type SubclientProperties struct {
 }
 
 type SubclientUpdateRequestClientEntity struct {
-	SubclientID int `json:"subclientId"`
+	SubclientID   int `json:"subclientId,omitempty"`
+	ClientName    int `json:"clientName,omitempty"`
+	AppName       int `json:"appName,omitempty"`
+	SubclientName int `json:"subclientName,omitempty"`
+	BackupsetName int `json:"backupsetName,omitempty"`
 }
 
 type CloudAppsSubClientProp struct {
