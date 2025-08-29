@@ -18,6 +18,7 @@ import (
 
 var (
 	_ resource.Resource                = (*clientResource)(nil)
+	_ resource.ResourceWithConfigure   = (*clientResource)(nil)
 	_ resource.ResourceWithImportState = (*clientResource)(nil)
 )
 
@@ -66,29 +67,11 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					int64planmodifier.RequiresReplace(),
 				},
 			},
-			"credential_id": schema.Int64Attribute{
-				Required: true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
-				},
-			},
-			"access_node_id": schema.Int64Attribute{
-				Required: true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
-				},
-			},
 			"project_id": schema.StringAttribute{
 				Required: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
-			},
-			"bucket_name": schema.StringAttribute{
-				Optional: true,
-			},
-			"bucket_project": schema.StringAttribute{
-				Optional: true,
 			},
 			"subclient_id": schema.Int64Attribute{
 				Optional: true,
@@ -134,53 +117,14 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	clientId := strconv.Itoa(createResponse.Response.Entity.ClientID)
 
-	if !plan.BucketName.IsNull() && plan.BucketName.ValueString() != "" {
-		bucket := plan.BucketName.ValueString()
-		gcpProject := plan.BucketProject.ValueString()
-		if gcpProject == "" {
-			gcpProject = plan.ProjectID.ValueString()
-		}
-
-		var subID int
-		if !plan.SubclientID.IsNull() && plan.SubclientID.ValueInt64() > 0 {
-			subID = int(plan.SubclientID.ValueInt64())
-		} else {
-			getResponse, httpResponse, err := r.api.SubclientApi.Get(ctx, clientId)
-			if err != nil {
-				resp.Diagnostics.AddError(fmt.Sprintf("Failed fetching subclient for client id: %s", clientId), err.Error())
-				return
-			}
-			subID = getResponse.SubClientProperties[0].SubClientEntity.SubclientId
-
-			if httpResponse.StatusCode == http.StatusNotFound || subID == 0 {
-				resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id %s. Got subId %d and http status code %d", clientId, subID, httpResponse.StatusCode))
-				return
-
-			}
-		}
-
-		_, h, err := r.api.SubclientApi.Create(ctx, buildCreateSubclientPayload(subID, bucket, gcpProject))
-		if err != nil {
-			resp.Diagnostics.AddError(fmt.Sprintf("Failed to create subclient for subclientId: %d, bucket %s, project: %s", subID, bucket, gcpProject), err.Error())
-			return
-		}
-		if h.StatusCode != http.StatusOK {
-			resp.Diagnostics.AddError(fmt.Sprintf("Failed to create subclient for subclientId: %d, bucket %s, project: %s, http code: %d", subID, bucket, gcpProject, h.StatusCode), h.Status)
-			return
-		}
-	}
-
 	resp.State.Set(ctx, &clientModel{
-		ID:            types.StringValue(clientId),
-		Name:          plan.Name,
-		PlanID:        plan.PlanID,
-		CredentialID:  plan.CredentialID,
-		AccessNodeID:  plan.AccessNodeID,
-		ProjectID:     plan.ProjectID,
-		BucketName:    plan.BucketName,
-		BucketProject: plan.BucketProject,
-		SubclientID:   plan.SubclientID,
-		Response:      types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, clientId, plan.Name.ValueString())),
+		ID:           types.StringValue(clientId),
+		Name:         plan.Name,
+		PlanID:       plan.PlanID,
+		CredentialID: plan.CredentialID,
+		AccessNodeID: plan.AccessNodeID,
+		ProjectID:    plan.ProjectID,
+		Response:     types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, clientId, plan.Name.ValueString())),
 	})
 }
 
@@ -220,7 +164,7 @@ func (r *clientResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 
-	//TODO: implement deletion proection, as deletion of client might delete all backup data associated with it as well
+	//TODO: implement deletion protection, as deletion of client might delete all backup data associated with it as well
 
 	clientId := state.ID.ValueString()
 	_, httpResponse, err := r.api.ClientApi.Delete(ctx, clientId, true)
@@ -281,31 +225,6 @@ func buildCreateClientPayload(plan clientModel) *apiclient.ClientCreateRequest {
 		},
 		Entity: apiclient.Entity{
 			ClientName: plan.Name.ValueString(),
-		},
-	}
-}
-
-func buildCreateSubclientPayload(subclientID int, bucketName, projectName string) *apiclient.SubclientCreateOrUpdateRequestAndResponse {
-	return &apiclient.SubclientCreateOrUpdateRequestAndResponse{
-		SubclientProperties: apiclient.SubclientProperties{
-			SubclientEntity: apiclient.SubclientUpdateRequestClientEntity{
-				SubclientID: subclientID,
-			},
-			UseLocalContent: true,
-			CloudAppsSubClientProp: apiclient.CloudAppsSubClientProp{
-				InstanceType: 20,
-				ObjectStorageSubclient: apiclient.ObjectStorageSubclient{
-					ContentOperationType: 2,
-					Content: []apiclient.Content{
-						{
-							GCPContent: apiclient.GCPContent{
-								BucketName:  bucketName,
-								ProjectName: projectName,
-							},
-						},
-					},
-				},
-			},
 		},
 	}
 }
