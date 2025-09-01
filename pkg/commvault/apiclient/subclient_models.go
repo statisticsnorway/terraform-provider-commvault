@@ -46,16 +46,24 @@ type EntityInfo struct {
 	MultiCommcellId int    `json:"multiCommcellId"`
 }
 
-// -------------------------------------------------------
-
 type SubclientCreateOrUpdateRequestAndResponse struct {
 	SubclientProperties SubclientProperties `json:"subClientProperties"`
 }
 
 type SubclientProperties struct {
-	SubclientEntity        SubclientUpdateRequestClientEntity `json:"subClientEntity"`
-	UseLocalContent        bool                               `json:"useLocalContent"`
-	CloudAppsSubClientProp CloudAppsSubClientProp             `json:"cloudAppsSubClientProp"`
+	SubclientEntity              SubclientUpdateRequestClientEntity `json:"subClientEntity"`
+	UseLocalContent              bool                               `json:"useLocalContent"`
+	FsContentOperationType       string                             `json:"fsContentOperationType,omitempty"`       // "OVERWRITE"
+	FsExcludeFilterOperationType string                             `json:"fsExcludeFilterOperationType,omitempty"` // "CLEAR"
+	FsIncludeFilterOperationType string                             `json:"fsIncludeFilterOperationType,omitempty"` // "CLEAR"
+	Content                      []SubclientFsContent               `json:"content,omitempty"`
+	CloudAppsSubClientProp       *CloudAppsSubClientProp            `json:"cloudAppsSubClientProp,omitempty"`
+}
+
+type SubclientFsContent struct {
+	Path        string `json:"path,omitempty"`
+	ExcludePath string `json:"excludePath,omitempty"`
+	IncludePath string `json:"includePath,omitempty"`
 }
 
 type SubclientUpdateRequestClientEntity struct {

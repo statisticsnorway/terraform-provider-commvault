@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"statisticsnorway/terraform-provider-commvault/pkg/commvault/apiclient"
@@ -93,7 +94,6 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			"subclient_id": schema.Int64Attribute{
 				Optional: true,
 			},
-
 			"response": schema.StringAttribute{
 				Computed: true,
 			},
@@ -112,7 +112,6 @@ func (r *clientResource) Configure(_ context.Context, req resource.ConfigureRequ
 			"Unexpected Resource Configure Type",
 			"Please report this issue to the provider developers.",
 		)
-
 		return
 	}
 
@@ -151,21 +150,35 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 				return
 			}
 			subID = getResponse.SubClientProperties[0].SubClientEntity.SubclientId
-
 			if httpResponse.StatusCode == http.StatusNotFound || subID == 0 {
 				resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id %s. Got subId %d and http status code %d", clientId, subID, httpResponse.StatusCode))
 				return
-
 			}
 		}
 
-		_, h, err := r.api.SubclientApi.Update(ctx, strconv.Itoa(subID), buildCreateSubclientPayload(subID, bucket, gcpProject))
-		if err != nil {
-			resp.Diagnostics.AddError(fmt.Sprintf("Failed to create subclient for subclientId: %d, bucket %s, project: %s", subID, bucket, gcpProject), err.Error())
-			return
+		payload := buildCreateSubclientPayload(subID, bucket, gcpProject)
+
+		if b, err := json.MarshalIndent(payload, "", "  "); err == nil {
+			resp.Diagnostics.AddWarning("Subclient Update Payload", string(b))
 		}
-		if h.StatusCode != http.StatusOK {
-			resp.Diagnostics.AddError(fmt.Sprintf("Failed to create subclient for subclientId: %d, bucket %s, project: %s, http code: %d", subID, bucket, gcpProject, h.StatusCode), h.Status)
+
+		_, h, err := r.api.SubclientApi.Update(ctx, strconv.Itoa(subID), payload)
+		if err != nil {
+			status := ""
+			if h != nil {
+				status = h.Status
+			}
+			if ge, ok := err.(apiclient.GenericSwaggerError); ok {
+				resp.Diagnostics.AddError(
+					fmt.Sprintf("Failed to update subclient %d", subID),
+					fmt.Sprintf("HTTP %s\nResponse body:\n%s", status, string(ge.Body())),
+				)
+				return
+			}
+			resp.Diagnostics.AddError(
+				fmt.Sprintf("Failed to update subclient %d", subID),
+				fmt.Sprintf("HTTP %s\n%v", status, err),
+			)
 			return
 		}
 	}
@@ -219,8 +232,6 @@ func (r *clientResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() || state.ID.IsNull() {
 		return
 	}
-
-	//TODO: implement deletion proection, as deletion of client might delete all backup data associated with it as well
 
 	clientId := state.ID.ValueString()
 	_, httpResponse, err := r.api.ClientApi.Delete(ctx, clientId, true)
@@ -291,8 +302,14 @@ func buildCreateSubclientPayload(subclientID int, bucketName, projectName string
 			SubclientEntity: apiclient.SubclientUpdateRequestClientEntity{
 				SubclientID: subclientID,
 			},
-			UseLocalContent: true,
-			CloudAppsSubClientProp: apiclient.CloudAppsSubClientProp{
+			UseLocalContent:              true,
+			FsContentOperationType:       "OVERWRITE",
+			FsExcludeFilterOperationType: "CLEAR",
+			FsIncludeFilterOperationType: "CLEAR",
+			Content: []apiclient.SubclientFsContent{
+				{Path: "/" + bucketName},
+			},
+			CloudAppsSubClientProp: &apiclient.CloudAppsSubClientProp{
 				InstanceType: 20,
 				ObjectStorageSubclient: apiclient.ObjectStorageSubclient{
 					ContentOperationType: 2,
