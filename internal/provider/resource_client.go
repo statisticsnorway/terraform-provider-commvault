@@ -159,7 +159,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 			}
 		}
 
-		_, h, err := r.api.SubclientApi.Create(ctx, buildCreateSubclientPayload(subID, bucket, gcpProject))
+		_, h, err := r.api.SubclientApi.Update(ctx, strconv.Itoa(subID), buildCreateSubclientPayload(subID, bucket, gcpProject))
 		if err != nil {
 			resp.Diagnostics.AddError(fmt.Sprintf("Failed to create subclient for subclientId: %d, bucket %s, project: %s", subID, bucket, gcpProject), err.Error())
 			return

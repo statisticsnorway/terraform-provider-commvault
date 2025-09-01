@@ -17,8 +17,8 @@ type SubclientApiService service
 // This operation returns a list of subclients for a client.
 // https://api.commvault.com/docs/SP36/api/cv/SubclientOperations/get-subclient/
 func (a *SubclientApiService) Get(ctx context.Context, subClientId string) (SubclientGetResponse, *http.Response, error) {
-	return prepareAndCallApiJSON[SubclientGetResponse](ctx, a.client, http.MethodGet, "/subclient", url.Values{
-		"client_id": {subClientId},
+	return prepareAndCallApiJSON[SubclientGetResponse](ctx, a.client, http.MethodGet, "/Subclient", url.Values{
+		"clientId": {subClientId},
 	}, nil)
 }
 
