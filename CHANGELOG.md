@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.4](https://github.com/statisticsnorway/terraform-provider-commvault/compare/v0.0.3...v0.0.4) (2025-09-02)
+
+
+### Bug Fixes
+
+* Add information to logging ([7511ef8](https://github.com/statisticsnorway/terraform-provider-commvault/commit/7511ef864d1c108c5ab6319830093ab6c5e5c1b1))
+
 ## [0.0.3](https://github.com/statisticsnorway/terraform-provider-commvault/compare/v0.0.2...v0.0.3) (2025-09-02)
 
 
