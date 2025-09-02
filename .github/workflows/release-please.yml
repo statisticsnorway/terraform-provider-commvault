@@ -22,4 +22,4 @@ jobs:
   release-with-goreleaser:
     needs: release-please
     if: needs.release-please.outputs.release_created
-    uses: ./.github/workflows/release.yml
+    uses: ./.github/workflows/release.yaml
