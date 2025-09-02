@@ -105,7 +105,7 @@ func (p *commvaultProvider) Configure(ctx context.Context, req provider.Configur
 		resp.Diagnostics.AddError("Login failed", err.Error())
 		return
 	}
-	tflog.Info(ctx, "Login OK")
+	tflog.Info(ctx, "Login ok for username: "+loginResponse.UserName)
 	apiClient.SetToken(loginResponse.Token)
 
 	providerData := &CommvaultProviderData{
