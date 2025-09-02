@@ -53,9 +53,9 @@ type SubclientCreateOrUpdateRequestAndResponse struct {
 type SubclientProperties struct {
 	SubclientEntity              SubclientUpdateRequestClientEntity `json:"subClientEntity"`
 	UseLocalContent              bool                               `json:"useLocalContent"`
-	FsContentOperationType       string                             `json:"fsContentOperationType,omitempty"`       // "OVERWRITE"
-	FsExcludeFilterOperationType string                             `json:"fsExcludeFilterOperationType,omitempty"` // "CLEAR"
-	FsIncludeFilterOperationType string                             `json:"fsIncludeFilterOperationType,omitempty"` // "CLEAR"
+	FsContentOperationType       string                             `json:"fsContentOperationType,omitempty"`
+	FsExcludeFilterOperationType string                             `json:"fsExcludeFilterOperationType,omitempty"`
+	FsIncludeFilterOperationType string                             `json:"fsIncludeFilterOperationType,omitempty"`
 	Content                      []SubclientFsContent               `json:"content,omitempty"`
 	CloudAppsSubClientProp       *CloudAppsSubClientProp            `json:"cloudAppsSubClientProp,omitempty"`
 }
@@ -71,17 +71,17 @@ type SubclientUpdateRequestClientEntity struct {
 }
 
 type CloudAppsSubClientProp struct {
-	InstanceType           int                    `json:"instanceType"`
+	InstanceType           string                 `json:"instanceType"`
 	ObjectStorageSubclient ObjectStorageSubclient `json:"objectStorageSubclient"`
 }
 
 type ObjectStorageSubclient struct {
-	ContentOperationType int       `json:"contentOperationType"`
+	ContentOperationType string    `json:"contentOperationType"`
 	Content              []Content `json:"content"`
 }
 
 type Content struct {
-	GCPContent GCPContent `json:"gcpContent"`
+	GCPContent *GCPContent `json:"gcpContent,omitempty"`
 }
 
 type GCPContent struct {

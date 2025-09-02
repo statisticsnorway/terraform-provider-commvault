@@ -7,3 +7,8 @@ plan_id        = 1
 credential_id  = 6
 access_node_id = 3381
 project_id     = "example-projectid"
+
+bucket_contents = [
+  { name = "example-bucket1" },
+  { name = "example-bucket2" }
+]
