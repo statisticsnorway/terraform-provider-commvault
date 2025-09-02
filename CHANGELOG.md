@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.2](https://github.com/statisticsnorway/terraform-provider-commvault/compare/v0.0.1...v0.0.2) (2025-09-02)
+
+
+### Miscellaneous Chores
+
+* release 0.0.2 ([67aea7e](https://github.com/statisticsnorway/terraform-provider-commvault/commit/67aea7e0672edf42214997d5869e052f4dc35810))
+
 ## 0.0.1 (2025-09-01)
 
 
