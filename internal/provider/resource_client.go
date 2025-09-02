@@ -236,7 +236,7 @@ func (r *clientResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	clientId := state.ID.ValueString()
 	_, httpResponse, err := r.api.ClientApi.Delete(ctx, clientId, true)
 	if err != nil {
-		resp.Diagnostics.AddError("Error occured during delete", err.Error())
+		resp.Diagnostics.AddError("Error occurred during delete", err.Error())
 		return
 	}
 	if httpResponse.StatusCode != http.StatusOK {
