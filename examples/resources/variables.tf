@@ -1,40 +1,48 @@
 variable "commvault_base_url" {
-  description = "Base URL for the Commvault API"
   type        = string
+  description = "Base API URL, e.g. https://<host>/commandcenter/api"
 }
 
 variable "commvault_username" {
-  description = "Username for Commvault authentication"
   type        = string
+  description = "Commvault username"
 }
 
 variable "commvault_password" {
-  description = "Password for Commvault authentication"
   type        = string
   sensitive   = true
+  description = "Commvault password (sensitive)"
 }
 
 variable "client_name" {
-  description = "Name of the Commvault client"
   type        = string
+  description = "Commvault client name to create"
 }
 
 variable "plan_id" {
-  description = "Plan ID to associate with the client"
   type        = number
+  description = "Plan ID to attach to the client"
 }
 
 variable "credential_id" {
-  description = "Credential ID for the Commvault client"
   type        = number
+  description = "Credential ID for the client"
 }
 
 variable "access_node_id" {
-  description = "Access Node ID for the Commvault client"
   type        = number
+  description = "Access node (client) ID"
 }
 
 variable "project_id" {
-  description = "GCP Project ID"
   type        = string
+  description = "Default GCP Project ID (used when a bucket item has no project)"
+}
+
+variable "bucket_contents" {
+  description = "List of buckets to include; project defaults to project_id when omitted."
+  type = list(object({
+    name    = string
+    project = optional(string)
+  }))
 }

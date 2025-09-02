@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -28,6 +29,11 @@ type clientResource struct {
 	api *apiclient.APIClient
 }
 
+type bucketItemModel struct {
+	Name    types.String `tfsdk:"name"`
+	Project types.String `tfsdk:"project"`
+}
+
 type clientModel struct {
 	ID           types.String `tfsdk:"id"`
 	Name         types.String `tfsdk:"name"`
@@ -36,10 +42,10 @@ type clientModel struct {
 	AccessNodeID types.Int64  `tfsdk:"access_node_id"`
 	ProjectID    types.String `tfsdk:"project_id"`
 
-	BucketName    types.String `tfsdk:"bucket_name"`
-	BucketProject types.String `tfsdk:"bucket_project"`
-	SubclientID   types.Int64  `tfsdk:"subclient_id"`
-	Response      types.String `tfsdk:"response"`
+	BucketContents []bucketItemModel `tfsdk:"bucket_contents"`
+
+	SubclientID types.Int64  `tfsdk:"subclient_id"`
+	Response    types.String `tfsdk:"response"`
 }
 
 func (r *clientResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -85,17 +91,28 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"bucket_name": schema.StringAttribute{
-				Optional: true,
-			},
-			"bucket_project": schema.StringAttribute{
-				Optional: true,
-			},
 			"subclient_id": schema.Int64Attribute{
 				Optional: true,
 			},
 			"response": schema.StringAttribute{
 				Computed: true,
+			},
+		},
+		Blocks: map[string]schema.Block{
+			"bucket_contents": schema.ListNestedBlock{
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
+				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"name": schema.StringAttribute{
+							Required: true,
+						},
+						"project": schema.StringAttribute{
+							Optional: true,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -105,16 +122,11 @@ func (r *clientResource) Configure(_ context.Context, req resource.ConfigureRequ
 	if req.ProviderData == nil {
 		return
 	}
-
 	providerData, ok := req.ProviderData.(*CommvaultProviderData)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Resource Configure Type",
-			"Please report this issue to the provider developers.",
-		)
+		resp.Diagnostics.AddError("Unexpected Resource Configure Type", "Please report this issue to the provider developers.")
 		return
 	}
-
 	r.api = providerData.ApiClient
 }
 
@@ -133,13 +145,8 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	clientId := strconv.Itoa(createResponse.Response.Entity.ClientID)
 
-	if !plan.BucketName.IsNull() && plan.BucketName.ValueString() != "" {
-		bucket := plan.BucketName.ValueString()
-		gcpProject := plan.BucketProject.ValueString()
-		if gcpProject == "" {
-			gcpProject = plan.ProjectID.ValueString()
-		}
-
+	cloudContents := buildCloudContents(plan)
+	if len(cloudContents) > 0 {
 		var subID int
 		if !plan.SubclientID.IsNull() && plan.SubclientID.ValueInt64() > 0 {
 			subID = int(plan.SubclientID.ValueInt64())
@@ -149,14 +156,18 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 				resp.Diagnostics.AddError(fmt.Sprintf("Failed fetching subclient for client id: %s", clientId), err.Error())
 				return
 			}
+			if httpResponse.StatusCode == http.StatusNotFound || len(getResponse.SubClientProperties) == 0 {
+				resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id %s. HTTP %d", clientId, httpResponse.StatusCode))
+				return
+			}
 			subID = getResponse.SubClientProperties[0].SubClientEntity.SubclientId
-			if httpResponse.StatusCode == http.StatusNotFound || subID == 0 {
-				resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id %s. Got subId %d and http status code %d", clientId, subID, httpResponse.StatusCode))
+			if subID == 0 {
+				resp.Diagnostics.AddError("Failed fetching subclient", "Received subclientId=0")
 				return
 			}
 		}
 
-		payload := buildCreateSubclientPayload(subID, bucket, gcpProject)
+		payload := buildCloudAppsSubclientPayload(subID, cloudContents)
 
 		if b, err := json.MarshalIndent(payload, "", "  "); err == nil {
 			resp.Diagnostics.AddWarning("Subclient Update Payload", string(b))
@@ -184,16 +195,15 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	resp.State.Set(ctx, &clientModel{
-		ID:            types.StringValue(clientId),
-		Name:          plan.Name,
-		PlanID:        plan.PlanID,
-		CredentialID:  plan.CredentialID,
-		AccessNodeID:  plan.AccessNodeID,
-		ProjectID:     plan.ProjectID,
-		BucketName:    plan.BucketName,
-		BucketProject: plan.BucketProject,
-		SubclientID:   plan.SubclientID,
-		Response:      types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, clientId, plan.Name.ValueString())),
+		ID:             types.StringValue(clientId),
+		Name:           plan.Name,
+		PlanID:         plan.PlanID,
+		CredentialID:   plan.CredentialID,
+		AccessNodeID:   plan.AccessNodeID,
+		ProjectID:      plan.ProjectID,
+		SubclientID:    plan.SubclientID,
+		BucketContents: plan.BucketContents,
+		Response:       types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, clientId, plan.Name.ValueString())),
 	})
 }
 
@@ -296,7 +306,36 @@ func buildCreateClientPayload(plan clientModel) *apiclient.ClientCreateRequest {
 	}
 }
 
-func buildCreateSubclientPayload(subclientID int, bucketName, projectName string) *apiclient.SubclientCreateOrUpdateRequestAndResponse {
+func buildCloudContents(plan clientModel) []apiclient.Content {
+	var contents []apiclient.Content
+	for _, item := range plan.BucketContents {
+		if item.Name.IsNull() || item.Name.ValueString() == "" {
+			continue
+		}
+		project := plan.ProjectID.ValueString()
+		if !item.Project.IsNull() && item.Project.ValueString() != "" {
+			project = item.Project.ValueString()
+		}
+		contents = append(contents, apiclient.Content{
+			GCPContent: &apiclient.GCPContent{
+				BucketName:  item.Name.ValueString(),
+				ProjectName: project,
+			},
+		})
+	}
+	return contents
+}
+
+func buildCloudAppsSubclientPayload(subclientID int, contents []apiclient.Content) *apiclient.SubclientCreateOrUpdateRequestAndResponse {
+	paths := make([]apiclient.SubclientFsContent, 0, len(contents))
+	for _, c := range contents {
+		if c.GCPContent != nil && c.GCPContent.BucketName != "" {
+			paths = append(paths, apiclient.SubclientFsContent{
+				Path: "/" + c.GCPContent.BucketName,
+			})
+		}
+	}
+
 	return &apiclient.SubclientCreateOrUpdateRequestAndResponse{
 		SubclientProperties: apiclient.SubclientProperties{
 			SubclientEntity: apiclient.SubclientUpdateRequestClientEntity{
@@ -306,21 +345,12 @@ func buildCreateSubclientPayload(subclientID int, bucketName, projectName string
 			FsContentOperationType:       "OVERWRITE",
 			FsExcludeFilterOperationType: "CLEAR",
 			FsIncludeFilterOperationType: "CLEAR",
-			Content: []apiclient.SubclientFsContent{
-				{Path: "/" + bucketName},
-			},
+			Content:                      paths,
 			CloudAppsSubClientProp: &apiclient.CloudAppsSubClientProp{
-				InstanceType: 20,
+				InstanceType: "GOOGLE_CLOUD",
 				ObjectStorageSubclient: apiclient.ObjectStorageSubclient{
-					ContentOperationType: 2,
-					Content: []apiclient.Content{
-						{
-							GCPContent: apiclient.GCPContent{
-								BucketName:  bucketName,
-								ProjectName: projectName,
-							},
-						},
-					},
+					ContentOperationType: "OVERWRITE",
+					Content:              contents,
 				},
 			},
 		},
