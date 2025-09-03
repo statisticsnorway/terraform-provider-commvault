@@ -306,7 +306,7 @@ func decodeAPIResponse[T any](
 	// If there is a specific model for this status code, decode into it
 	if httpResp.StatusCode == 404 {
 		var v GenericResponse
-		if err := client.decode(v, body, httpResp.Header.Get("Content-Type")); err != nil {
+		if err := client.decode(&v, body, httpResp.Header.Get("Content-Type")); err != nil {
 			genericError.error = err.Error()
 			return okValue, httpResp, genericError
 		}
