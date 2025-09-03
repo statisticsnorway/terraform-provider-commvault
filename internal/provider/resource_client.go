@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"net/http"
 	"statisticsnorway/terraform-provider-commvault/pkg/commvault/apiclient"
 	"strconv"
@@ -136,6 +137,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	tflog.Info(ctx, "Creating client")
 	createResponse, _, err := r.api.ClientApi.Create(ctx, buildCreateClientPayload(plan))
 	if err != nil {
 		resp.Diagnostics.AddError("Create failed", err.Error())
@@ -144,49 +146,49 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	clientId := strconv.Itoa(createResponse.Response.Entity.ClientID)
 
-	if len(plan.BucketContents) > 0 {
-		var subID int
-		if !plan.SubclientID.IsNull() && plan.SubclientID.ValueInt64() > 0 {
-			subID = int(plan.SubclientID.ValueInt64())
-		} else {
-			getResponse, httpResponse, err := r.api.SubclientApi.Get(ctx, clientId)
-			if err != nil {
-				resp.Diagnostics.AddError(fmt.Sprintf("Failed fetching subclient for client id: %s", clientId), err.Error())
-				return
-			}
-			if httpResponse.StatusCode == http.StatusNotFound || len(getResponse.SubClientProperties) == 0 {
-				resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id %s. HTTP %d", clientId, httpResponse.StatusCode))
-				return
-			}
-			subID = getResponse.SubClientProperties[0].SubClientEntity.SubclientId
-			if subID == 0 {
-				resp.Diagnostics.AddError("Failed fetching subclient", "Received subclientId=0")
-				return
-			}
-		}
+	if len(plan.BucketContents) == 0 {
+		resp.State.Set(ctx, &clientModel{
+			ID:             types.StringValue(clientId),
+			Name:           plan.Name,
+			PlanID:         plan.PlanID,
+			CredentialID:   plan.CredentialID,
+			AccessNodeID:   plan.AccessNodeID,
+			ProjectID:      plan.ProjectID,
+			SubclientID:    plan.SubclientID,
+			BucketContents: plan.BucketContents,
+			Response:       types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, clientId, plan.Name.ValueString())),
+		})
+		return
+	}
 
-		payload := buildCloudAppsSubclientPayload(subID, plan.BucketContents)
-
-		_, h, err := r.api.SubclientApi.Update(ctx, strconv.Itoa(subID), payload)
+	var subID int
+	if !plan.SubclientID.IsNull() && plan.SubclientID.ValueInt64() > 0 {
+		subID = int(plan.SubclientID.ValueInt64())
+	} else {
+		getResponse, httpResponse, err := r.api.SubclientApi.Get(ctx, clientId)
 		if err != nil {
-			status := ""
-			if h != nil {
-				status = h.Status
-			}
-			if ge, ok := err.(apiclient.GenericSwaggerError); ok {
-				resp.Diagnostics.AddError(
-					fmt.Sprintf("Failed to update subclient %d", subID),
-					fmt.Sprintf("HTTP %s\nResponse body:\n%s", status, string(ge.Body())),
-				)
-				return
-			}
-			resp.Diagnostics.AddError(
-				fmt.Sprintf("Failed to update subclient %d", subID),
-				fmt.Sprintf("HTTP %s\n%v", status, err),
-			)
+			resp.Diagnostics.AddError(fmt.Sprintf("Failed fetching subclient for client id: %s", clientId), err.Error())
+			return
+		}
+		if httpResponse.StatusCode == http.StatusNotFound || len(getResponse.SubClientProperties) == 0 || getResponse.SubClientProperties[0].SubClientEntity.SubclientId == 0 {
+			resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id %s. HTTP %d", clientId, httpResponse.StatusCode))
 			return
 		}
 	}
+	tflog.Info(ctx, "Using subclient "+strconv.Itoa(subID))
+
+	payload := buildCloudAppsSubclientPayload(subID, plan.BucketContents)
+
+	_, httpResponse, err := r.api.SubclientApi.Update(ctx, strconv.Itoa(subID), payload)
+	if err != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclient %d", subID), err.Error())
+		return
+	}
+	if httpResponse.StatusCode != http.StatusOK {
+		resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id: %s, subclientId: %d, Http status: %d", clientId, subID, httpResponse.StatusCode))
+		return
+	}
+	tflog.Info(ctx, "Subclient updated")
 
 	resp.State.Set(ctx, &clientModel{
 		ID:             types.StringValue(clientId),
