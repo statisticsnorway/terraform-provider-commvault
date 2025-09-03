@@ -138,8 +138,12 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	tflog.Info(ctx, "Creating client")
-	createResponse, _, err := r.api.ClientApi.Create(ctx, buildCreateClientPayload(plan))
+	createResponse, response, err := r.api.ClientApi.Create(ctx, buildCreateClientPayload(plan))
 	if err != nil {
+		if response != nil && response.StatusCode == 409 {
+			resp.Diagnostics.AddError("Client already exists", fmt.Sprintf("Http status code: %d", response.StatusCode))
+			return
+		}
 		resp.Diagnostics.AddError("Create failed", err.Error())
 		return
 	}
