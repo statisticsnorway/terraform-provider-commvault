@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"statisticsnorway/terraform-provider-commvault/pkg/commvault/apiclient"
@@ -145,8 +144,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	clientId := strconv.Itoa(createResponse.Response.Entity.ClientID)
 
-	cloudContents := buildCloudContents(plan)
-	if len(cloudContents) > 0 {
+	if len(plan.BucketContents) > 0 {
 		var subID int
 		if !plan.SubclientID.IsNull() && plan.SubclientID.ValueInt64() > 0 {
 			subID = int(plan.SubclientID.ValueInt64())
@@ -167,11 +165,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 			}
 		}
 
-		payload := buildCloudAppsSubclientPayload(subID, cloudContents)
-
-		if b, err := json.MarshalIndent(payload, "", "  "); err == nil {
-			resp.Diagnostics.AddWarning("Subclient Update Payload", string(b))
-		}
+		payload := buildCloudAppsSubclientPayload(subID, plan.BucketContents)
 
 		_, h, err := r.api.SubclientApi.Update(ctx, strconv.Itoa(subID), payload)
 		if err != nil {
@@ -306,34 +300,21 @@ func buildCreateClientPayload(plan clientModel) *apiclient.ClientCreateRequest {
 	}
 }
 
-func buildCloudContents(plan clientModel) []apiclient.Content {
-	var contents []apiclient.Content
-	for _, item := range plan.BucketContents {
-		if item.Name.IsNull() || item.Name.ValueString() == "" {
-			continue
-		}
-		project := plan.ProjectID.ValueString()
-		if !item.Project.IsNull() && item.Project.ValueString() != "" {
-			project = item.Project.ValueString()
-		}
-		contents = append(contents, apiclient.Content{
-			GCPContent: &apiclient.GCPContent{
-				BucketName:  item.Name.ValueString(),
-				ProjectName: project,
-			},
+func buildCloudAppsSubclientPayload(subclientID int, contents []bucketItemModel) *apiclient.SubclientCreateOrUpdateRequestAndResponse {
+	bucketPaths := make([]apiclient.SubclientFsContent, len(contents))
+	for _, c := range contents {
+		bucketPaths = append(bucketPaths, apiclient.SubclientFsContent{
+			Path: "/" + c.Name.ValueString(),
 		})
 	}
-	return contents
-}
-
-func buildCloudAppsSubclientPayload(subclientID int, contents []apiclient.Content) *apiclient.SubclientCreateOrUpdateRequestAndResponse {
-	paths := make([]apiclient.SubclientFsContent, 0, len(contents))
-	for _, c := range contents {
-		if c.GCPContent != nil && c.GCPContent.BucketName != "" {
-			paths = append(paths, apiclient.SubclientFsContent{
-				Path: "/" + c.GCPContent.BucketName,
-			})
-		}
+	gcpContents := make([]apiclient.Content, len(contents))
+	for _, item := range contents {
+		gcpContents = append(gcpContents, apiclient.Content{
+			GCPContent: &apiclient.GCPContent{
+				BucketName:  item.Name.ValueString(),
+				ProjectName: item.Project.ValueString(),
+			},
+		})
 	}
 
 	return &apiclient.SubclientCreateOrUpdateRequestAndResponse{
@@ -345,12 +326,12 @@ func buildCloudAppsSubclientPayload(subclientID int, contents []apiclient.Conten
 			FsContentOperationType:       "OVERWRITE",
 			FsExcludeFilterOperationType: "CLEAR",
 			FsIncludeFilterOperationType: "CLEAR",
-			Content:                      paths,
+			Content:                      bucketPaths,
 			CloudAppsSubClientProp: &apiclient.CloudAppsSubClientProp{
 				InstanceType: "GOOGLE_CLOUD",
 				ObjectStorageSubclient: apiclient.ObjectStorageSubclient{
 					ContentOperationType: "OVERWRITE",
-					Content:              contents,
+					Content:              gcpContents,
 				},
 			},
 		},
