@@ -149,6 +149,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	clientId := strconv.Itoa(createResponse.Response.Entity.ClientID)
+	tflog.Debug(ctx, "New client created id:"+clientId)
 
 	if len(plan.BucketContents) == 0 {
 		resp.State.Set(ctx, &clientModel{
@@ -168,16 +169,20 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 	var subID int
 	if !plan.SubclientID.IsNull() && plan.SubclientID.ValueInt64() > 0 {
 		subID = int(plan.SubclientID.ValueInt64())
+		tflog.Debug(ctx, "Using subclient id from plan: "+strconv.Itoa(subID))
 	} else {
-		getResponse, httpResponse, err := r.api.SubclientApi.Get(ctx, clientId)
-		if err != nil {
-			resp.Diagnostics.AddError(fmt.Sprintf("Failed fetching subclient for client id: %s", clientId), err.Error())
+		tflog.Debug(ctx, "Fetching default subclient id for clientId "+clientId)
+		getResponse, httpResponse, err2 := r.api.SubclientApi.Get(ctx, clientId)
+		if err2 != nil {
+			resp.Diagnostics.AddError(fmt.Sprintf("Failed fetching subclient for client id: %s", clientId), err2.Error())
 			return
 		}
+		tflog.Debug(ctx, fmt.Sprintf("get subclient response: %#v", getResponse))
 		if httpResponse.StatusCode == http.StatusNotFound || len(getResponse.SubClientProperties) == 0 || getResponse.SubClientProperties[0].SubClientEntity.SubclientId == 0 {
 			resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id %s. HTTP %d", clientId, httpResponse.StatusCode))
 			return
 		}
+		subID = getResponse.SubClientProperties[0].SubClientEntity.SubclientId
 	}
 	tflog.Info(ctx, "Using subclient "+strconv.Itoa(subID))
 
@@ -185,7 +190,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	_, httpResponse, err := r.api.SubclientApi.Update(ctx, strconv.Itoa(subID), payload)
 	if err != nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclient %d", subID), err.Error())
+		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclientId: %d", subID), err.Error())
 		return
 	}
 	if httpResponse.StatusCode != http.StatusOK {
