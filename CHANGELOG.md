@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.0](https://github.com/statisticsnorway/terraform-provider-commvault/compare/v0.0.4...v0.1.0) (2025-09-03)
+
+
+### Features
+
+* support multiple bucket_contents for GCP subclient ([#18](https://github.com/statisticsnorway/terraform-provider-commvault/issues/18)) ([1be3929](https://github.com/statisticsnorway/terraform-provider-commvault/commit/1be39296d31290ea3af2952a48ebd2eefe881962))
+
+
+### Bug Fixes
+
+* **apiclient:** Add docs and update parameter name ([908d4be](https://github.com/statisticsnorway/terraform-provider-commvault/commit/908d4bed3c0b4699535d02e10e35c086cef06abb))
+* **apiclient:** variable should be passed by pointer ([908d4be](https://github.com/statisticsnorway/terraform-provider-commvault/commit/908d4bed3c0b4699535d02e10e35c086cef06abb))
+* Make project for bucket configuration required ([908d4be](https://github.com/statisticsnorway/terraform-provider-commvault/commit/908d4bed3c0b4699535d02e10e35c086cef06abb))
+* Set subclient ID ([908d4be](https://github.com/statisticsnorway/terraform-provider-commvault/commit/908d4bed3c0b4699535d02e10e35c086cef06abb))
+
 ## [0.0.4](https://github.com/statisticsnorway/terraform-provider-commvault/compare/v0.0.3...v0.0.4) (2025-09-02)
 
 
