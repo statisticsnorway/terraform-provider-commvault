@@ -12,16 +12,24 @@ var (
 
 type SubclientApiService service
 
-func (a *SubclientApiService) Get(ctx context.Context, subClientId string) (SubclientGetResponse, *http.Response, error) {
+// Get This operation returns a list of subclients for a client.
+// https://api.commvault.com/docs/SP36/api/cv/SubclientOperations/get-subclient/
+func (a *SubclientApiService) Get(ctx context.Context, clientId string) (SubclientGetResponse, *http.Response, error) {
 	return prepareAndCallApiJSON[SubclientGetResponse](ctx, a.client, http.MethodGet, "/subclient", url.Values{
-		"clientId": {subClientId},
+		"clientId": {clientId},
 	}, nil)
 }
 
+// Create
+// https://api.commvault.com/docs/SP36/api/cv/S3ObjectStorage/post-subclient/
+// NB: Should not be confused or mixed with https://api.commvault.com/docs/SP36/api/cv/SubclientOperations/post-subclient/
 func (a *SubclientApiService) Create(ctx context.Context, createRequest *SubclientCreateOrUpdateRequestAndResponse) (SubclientCreateOrUpdateRequestAndResponse, *http.Response, error) {
 	return prepareAndCallApiJSON[SubclientCreateOrUpdateRequestAndResponse](ctx, a.client, http.MethodPost, "/subclient", nil, createRequest)
 }
 
+// Update This operation updates the properties associated with a subclient.
+// https://api.commvault.com/docs/SP36/api/cv/S3ObjectStorage/post-subclient-subclientid/
+// NB: Should not be confused or mixed with https://api.commvault.com/docs/SP36/api/cv/SubclientOperations/update-subclient-properties/
 func (a *SubclientApiService) Update(ctx context.Context, subclientId string, updateRequest *SubclientCreateOrUpdateRequestAndResponse) (SubclientCreateOrUpdateRequestAndResponse, *http.Response, error) {
 	return prepareAndCallApiJSON[SubclientCreateOrUpdateRequestAndResponse](ctx, a.client, http.MethodPost, "/subclient/"+subclientId, nil, updateRequest)
 }
