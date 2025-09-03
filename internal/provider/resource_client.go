@@ -108,7 +108,7 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 							Required: true,
 						},
 						"project": schema.StringAttribute{
-							Optional: true,
+							Required: true,
 						},
 					},
 				},
