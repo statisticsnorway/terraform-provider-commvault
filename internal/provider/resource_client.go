@@ -166,10 +166,10 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	var subID int
+	var subID string
 	if !plan.SubclientID.IsNull() && plan.SubclientID.ValueInt64() > 0 {
-		subID = int(plan.SubclientID.ValueInt64())
-		tflog.Debug(ctx, "Using subclient id from plan: "+strconv.Itoa(subID))
+		subID = strconv.Itoa(int(plan.SubclientID.ValueInt64()))
+		tflog.Debug(ctx, "Using subclient id from plan: "+subID)
 	} else {
 		tflog.Debug(ctx, "Fetching default subclient id for clientId "+clientId)
 		getResponse, httpResponse, err2 := r.api.SubclientApi.Get(ctx, clientId)
@@ -182,13 +182,13 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 			resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id %s. HTTP %d", clientId, httpResponse.StatusCode))
 			return
 		}
-		subID = getResponse.SubClientProperties[0].SubClientEntity.SubclientId
+		subID = strconv.Itoa(getResponse.SubClientProperties[0].SubClientEntity.SubclientId)
 	}
-	tflog.Info(ctx, "Using subclient "+strconv.Itoa(subID))
+	tflog.Info(ctx, "Using subclient "+subID)
 
 	payload := buildCloudAppsSubclientPayload(subID, plan.BucketContents)
 
-	_, httpResponse, err := r.api.SubclientApi.Update(ctx, strconv.Itoa(subID), payload)
+	_, httpResponse, err := r.api.SubclientApi.Update(ctx, subID, payload)
 	if err != nil {
 		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclientId: %d", subID), err.Error())
 		return
@@ -199,17 +199,19 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	tflog.Info(ctx, "Subclient updated")
 
-	resp.State.Set(ctx, &clientModel{
+	subclientId, _ := strconv.Atoi(subID)
+	diags := resp.State.Set(ctx, &clientModel{
 		ID:             types.StringValue(clientId),
 		Name:           plan.Name,
 		PlanID:         plan.PlanID,
 		CredentialID:   plan.CredentialID,
 		AccessNodeID:   plan.AccessNodeID,
 		ProjectID:      plan.ProjectID,
-		SubclientID:    plan.SubclientID,
+		SubclientID:    types.Int64Value(int64(subclientId)),
 		BucketContents: plan.BucketContents,
 		Response:       types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, clientId, plan.Name.ValueString())),
 	})
+	resp.Diagnostics.Append(diags...)
 }
 
 func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -311,7 +313,7 @@ func buildCreateClientPayload(plan clientModel) *apiclient.ClientCreateRequest {
 	}
 }
 
-func buildCloudAppsSubclientPayload(subclientID int, contents []bucketItemModel) *apiclient.SubclientCreateOrUpdateRequestAndResponse {
+func buildCloudAppsSubclientPayload(subclientID string, contents []bucketItemModel) *apiclient.SubclientCreateOrUpdateRequestAndResponse {
 	bucketPaths := make([]apiclient.SubclientFsContent, len(contents))
 	for _, c := range contents {
 		bucketPaths = append(bucketPaths, apiclient.SubclientFsContent{
@@ -328,10 +330,11 @@ func buildCloudAppsSubclientPayload(subclientID int, contents []bucketItemModel)
 		})
 	}
 
+	subclientId, _ := strconv.Atoi(subclientID)
 	return &apiclient.SubclientCreateOrUpdateRequestAndResponse{
 		SubclientProperties: apiclient.SubclientProperties{
 			SubclientEntity: apiclient.SubclientUpdateRequestClientEntity{
-				SubclientID: subclientID,
+				SubclientID: subclientId,
 			},
 			UseLocalContent:              true,
 			FsContentOperationType:       "OVERWRITE",
