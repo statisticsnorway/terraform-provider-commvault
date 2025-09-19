@@ -24,7 +24,7 @@ resource "commvault_client" "gcp" {
     for_each = var.bucket_contents
     content {
       name    = bucket_contents.value.name
-      project = coalesce(try(bucket_contents.value.project, null), var.project_id)
+      project = try(bucket_contents.value.project, var.project_id)
     }
   }
 }

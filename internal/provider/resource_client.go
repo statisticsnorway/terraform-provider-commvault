@@ -239,8 +239,40 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 	resp.State.Set(ctx, &state)
 }
 
-func (r *clientResource) Update(_ context.Context, _ resource.UpdateRequest, resp *resource.UpdateResponse) {
-	resp.Diagnostics.AddError("Update not supported", "Changes require replacement.")
+func (r *clientResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan clientModel
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+
+	var state clientModel
+	diags = req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	subclientId := strconv.Itoa(int(state.SubclientID.ValueInt64()))
+	tflog.Debug(ctx, "Updating subclient id "+subclientId)
+	payload := buildCloudAppsSubclientPayload(subclientId, plan.BucketContents)
+	tflog.Debug(ctx, "New payload built. Sending update request")
+	_, httpResponse, err := r.api.SubclientApi.Update(ctx, subclientId, payload)
+	if err != nil {
+		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclientId: %s", subclientId), err.Error())
+		return
+	}
+	// Check if response is OK
+	if httpResponse.StatusCode != http.StatusOK {
+		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclientId: %s", subclientId), fmt.Sprintf("Status code  %s: %s", httpResponse.StatusCode))
+		return
+	}
+
+	// Check if bucket contents has changed
+
+	diags = resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 func (r *clientResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -320,6 +352,7 @@ func buildCloudAppsSubclientPayload(subclientID string, contents []bucketItemMod
 			Path: "/" + c.Name.ValueString(),
 		})
 	}
+
 	gcpContents := make([]apiclient.Content, len(contents))
 	for _, item := range contents {
 		gcpContents = append(gcpContents, apiclient.Content{
