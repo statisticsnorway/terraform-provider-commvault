@@ -255,13 +255,11 @@ func (r *clientResource) Update(ctx context.Context, req resource.UpdateRequest,
 		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclientId: %s", subclientId), err.Error())
 		return
 	}
-	// Check if response is OK
+
 	if httpResponse.StatusCode != http.StatusOK {
 		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclientId: %s", subclientId), fmt.Sprintf("Status code  %s: %s", httpResponse.StatusCode))
 		return
 	}
-
-	// Check if bucket contents has changed
 
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
