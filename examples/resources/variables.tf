@@ -40,7 +40,7 @@ variable "project_id" {
 }
 
 variable "bucket_contents" {
-  description = "List of buckets to include; project_id defaults to project_id when omitted."
+  description = "List of buckets to include. project_id defaults to project_id when omitted."
   type = list(object({
     name       = string
     project_id = optional(string)
