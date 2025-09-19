@@ -44,8 +44,7 @@ type clientModel struct {
 
 	BucketContents []bucketItemModel `tfsdk:"bucket_contents"`
 
-	SubclientID types.Int64  `tfsdk:"subclient_id"`
-	Response    types.String `tfsdk:"response"`
+	SubclientID types.Int64 `tfsdk:"subclient_id"`
 }
 
 func (r *clientResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -92,9 +91,6 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				},
 			},
 			"subclient_id": schema.Int64Attribute{
-				Computed: true,
-			},
-			"response": schema.StringAttribute{
 				Computed: true,
 			},
 		},
@@ -161,7 +157,6 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 			ProjectID:      plan.ProjectID,
 			SubclientID:    plan.SubclientID,
 			BucketContents: plan.BucketContents,
-			Response:       types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, clientId, plan.Name.ValueString())),
 		})
 		return
 	}
@@ -210,7 +205,6 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 		ProjectID:      plan.ProjectID,
 		SubclientID:    plan.SubclientID,
 		BucketContents: plan.BucketContents,
-		Response:       types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, clientId, plan.Name.ValueString())),
 	})
 	resp.Diagnostics.Append(diags...)
 }
