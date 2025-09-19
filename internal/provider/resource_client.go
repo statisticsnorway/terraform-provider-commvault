@@ -92,7 +92,7 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				},
 			},
 			"subclient_id": schema.Int64Attribute{
-				Optional: true,
+				Computed: true,
 			},
 			"response": schema.StringAttribute{
 				Computed: true,
@@ -200,6 +200,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 	tflog.Info(ctx, "Subclient updated")
 
 	subclientId, _ := strconv.Atoi(subID)
+	plan.SubclientID = types.Int64Value(int64(subclientId))
 	diags := resp.State.Set(ctx, &clientModel{
 		ID:             types.StringValue(clientId),
 		Name:           plan.Name,
@@ -207,7 +208,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 		CredentialID:   plan.CredentialID,
 		AccessNodeID:   plan.AccessNodeID,
 		ProjectID:      plan.ProjectID,
-		SubclientID:    types.Int64Value(int64(subclientId)),
+		SubclientID:    plan.SubclientID,
 		BucketContents: plan.BucketContents,
 		Response:       types.StringValue(fmt.Sprintf(`{"clientId":%s,"clientName":"%s"}`, clientId, plan.Name.ValueString())),
 	})
