@@ -92,6 +92,9 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			},
 			"subclient_id": schema.Int64Attribute{
 				Computed: true,
+				PlanModifiers: []planmodifier.Int64{
+					int64planmodifier.UseStateForUnknown(),
+				},
 			},
 		},
 		Blocks: map[string]schema.Block{
