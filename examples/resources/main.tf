@@ -32,3 +32,7 @@ resource "commvault_client" "gcp" {
 output "client_id" {
   value = commvault_client.gcp.id
 }
+
+output "subclient_id" {
+  value = commvault_client.gcp.subclient_id
+}
