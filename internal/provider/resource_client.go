@@ -188,11 +188,11 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 
 	_, httpResponse, err := r.api.SubclientApi.Update(ctx, subID, payload)
 	if err != nil {
-		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclientId: %d", subID), err.Error())
+		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclientId: %s", subID), err.Error())
 		return
 	}
 	if httpResponse.StatusCode != http.StatusOK {
-		resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id: %s, subclientId: %d, Http status: %d", clientId, subID, httpResponse.StatusCode))
+		resp.Diagnostics.AddError("Failed fetching subclient", fmt.Sprintf("Client id: %s, subclientId: %s, Http status: %d", clientId, subID, httpResponse.StatusCode))
 		return
 	}
 	tflog.Info(ctx, "Subclient updated")
@@ -260,7 +260,7 @@ func (r *clientResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	if httpResponse.StatusCode != http.StatusOK {
-		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclientId: %s", subclientId), fmt.Sprintf("Status code  %s: %s", httpResponse.StatusCode))
+		resp.Diagnostics.AddError(fmt.Sprintf("Failed to update subclientId: %s", subclientId), fmt.Sprintf("Status code  %d", httpResponse.StatusCode))
 		return
 	}
 
