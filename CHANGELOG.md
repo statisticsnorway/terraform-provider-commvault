@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/statisticsnorway/terraform-provider-commvault/compare/v0.1.0...v0.2.0) (2025-09-19)
+
+
+### Features
+
+* implement update for client resource ([#23](https://github.com/statisticsnorway/terraform-provider-commvault/issues/23)) ([abdb08f](https://github.com/statisticsnorway/terraform-provider-commvault/commit/abdb08f5617cc2f1c1bbdf246053d52c95e471c0))
+* Remove response from state ([dd01477](https://github.com/statisticsnorway/terraform-provider-commvault/commit/dd014771550f3dd5234b3605b50a5e8cc13c43b3))
+
+
+### Bug Fixes
+
+* Set subclientID in state after create ([bf9ccf9](https://github.com/statisticsnorway/terraform-provider-commvault/commit/bf9ccf9759abfbd175480f89ceedbdf21b8ae595))
+* subclient id set to computed ([dd6524a](https://github.com/statisticsnorway/terraform-provider-commvault/commit/dd6524a841323d43ea962299b0e46f745c020147))
+
 ## [0.1.0](https://github.com/statisticsnorway/terraform-provider-commvault/compare/v0.0.4...v0.1.0) (2025-09-03)
 
 
