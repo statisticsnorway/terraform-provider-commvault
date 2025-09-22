@@ -25,4 +25,5 @@ jobs:
   release-with-goreleaser:
     needs: release-please
     if: needs.release-please.outputs.releases_created
+    secrets: inherit
     uses: ./.github/workflows/release.yaml
