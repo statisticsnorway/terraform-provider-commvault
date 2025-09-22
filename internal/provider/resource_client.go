@@ -30,8 +30,9 @@ type clientResource struct {
 }
 
 type bucketItemModel struct {
-	Name    types.String `tfsdk:"name"`
-	Project types.String `tfsdk:"project"`
+	Name             types.String `tfsdk:"name"`
+	Project          types.String `tfsdk:"project"`
+	ExcludedSubPaths types.List   `tfsdk:"excluded_sub_paths"`
 }
 
 type clientModel struct {
@@ -110,6 +111,10 @@ func (r *clientResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 						"project": schema.StringAttribute{
 							Required: true,
 						},
+						"excluded_sub_paths": schema.ListAttribute{
+							ElementType: types.StringType,
+							Optional:    true,
+						},
 					},
 				},
 			},
@@ -184,7 +189,7 @@ func (r *clientResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	tflog.Info(ctx, "Using subclient "+subID)
 
-	payload := buildCloudAppsSubclientPayload(subID, plan.BucketContents)
+	payload := buildCloudAppsSubclientPayload(ctx, subID, plan.BucketContents)
 
 	_, httpResponse, err := r.api.SubclientApi.Update(ctx, subID, payload)
 	if err != nil {
@@ -251,7 +256,7 @@ func (r *clientResource) Update(ctx context.Context, req resource.UpdateRequest,
 
 	subclientId := strconv.Itoa(int(state.SubclientID.ValueInt64()))
 	tflog.Debug(ctx, "Updating subclient id "+subclientId)
-	payload := buildCloudAppsSubclientPayload(subclientId, plan.BucketContents)
+	payload := buildCloudAppsSubclientPayload(ctx, subclientId, plan.BucketContents)
 	tflog.Debug(ctx, "New payload built. Sending update request")
 	_, httpResponse, err := r.api.SubclientApi.Update(ctx, subclientId, payload)
 	if err != nil {
@@ -341,12 +346,22 @@ func buildCreateClientPayload(plan clientModel) *apiclient.ClientCreateRequest {
 	}
 }
 
-func buildCloudAppsSubclientPayload(subclientID string, contents []bucketItemModel) *apiclient.SubclientCreateOrUpdateRequestAndResponse {
+func buildCloudAppsSubclientPayload(ctx context.Context, subclientID string, contents []bucketItemModel) *apiclient.SubclientCreateOrUpdateRequestAndResponse {
 	bucketPaths := make([]apiclient.SubclientFsContent, len(contents))
+	fsExcludeFilterOperationType := "CLEAR"
 	for _, c := range contents {
 		bucketPaths = append(bucketPaths, apiclient.SubclientFsContent{
 			Path: "/" + c.Name.ValueString(),
 		})
+
+		var excludedSubPaths []string
+		c.ExcludedSubPaths.ElementsAs(ctx, &excludedSubPaths, false)
+		for _, subPath := range excludedSubPaths {
+			fsExcludeFilterOperationType = "OVERWRITE"
+			bucketPaths = append(bucketPaths, apiclient.SubclientFsContent{
+				ExcludePath: "/" + c.Name.ValueString() + "/" + subPath,
+			})
+		}
 	}
 
 	gcpContents := make([]apiclient.Content, len(contents))
@@ -367,7 +382,7 @@ func buildCloudAppsSubclientPayload(subclientID string, contents []bucketItemMod
 			},
 			UseLocalContent:              true,
 			FsContentOperationType:       "OVERWRITE",
-			FsExcludeFilterOperationType: "CLEAR",
+			FsExcludeFilterOperationType: fsExcludeFilterOperationType,
 			FsIncludeFilterOperationType: "CLEAR",
 			Content:                      bucketPaths,
 			CloudAppsSubClientProp: &apiclient.CloudAppsSubClientProp{

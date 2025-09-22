@@ -25,6 +25,7 @@ resource "commvault_client" "gcp" {
     content {
       name    = bucket_contents.value.name
       project = try(bucket_contents.value.project, var.project_id)
+      excluded_sub_paths = ["temp/***", "tmp/***"]
     }
   }
 }
