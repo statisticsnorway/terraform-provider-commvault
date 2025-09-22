@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/statisticsnorway/terraform-provider-commvault/compare/v0.2.0...v0.3.0) (2025-09-22)
+
+
+### Features
+
+* Add support for exclusion of paths ([60a443b](https://github.com/statisticsnorway/terraform-provider-commvault/commit/60a443b1f48a69abf4e8a970ae674f9046e9f199))
+* Add support for exclusion of paths ([#25](https://github.com/statisticsnorway/terraform-provider-commvault/issues/25)) ([59aa2ae](https://github.com/statisticsnorway/terraform-provider-commvault/commit/59aa2aeb53eef2fcffa1947607c9b815d839f498))
+
 ## [0.2.0](https://github.com/statisticsnorway/terraform-provider-commvault/compare/v0.1.0...v0.2.0) (2025-09-19)
 
 
