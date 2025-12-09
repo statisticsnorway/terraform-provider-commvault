@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/statisticsnorway/terraform-provider-commvault/compare/v0.3.0...v0.3.1) (2025-12-09)
+
+
+### Bug Fixes
+
+* prevent terraform state deletion if the commvault api is unavailable ([3343f39](https://github.com/statisticsnorway/terraform-provider-commvault/commit/3343f393be80b9b1c1df933e1289b5d49ee81f11))
+* prevent terraform state deletion if the commvault api is unavailable ([#29](https://github.com/statisticsnorway/terraform-provider-commvault/issues/29)) ([e841fca](https://github.com/statisticsnorway/terraform-provider-commvault/commit/e841fca1ce0c117580f8d7228ae50bf62c30c202))
+
 ## [0.3.0](https://github.com/statisticsnorway/terraform-provider-commvault/compare/v0.2.0...v0.3.0) (2025-09-22)
 
 
