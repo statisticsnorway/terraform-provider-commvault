@@ -3,10 +3,11 @@ package provider
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"net/http"
 	"statisticsnorway/terraform-provider-commvault/pkg/commvault/apiclient"
 	"strconv"
+
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -230,8 +231,22 @@ func (r *clientResource) Read(ctx context.Context, req resource.ReadRequest, res
 
 	clientId := state.ID.ValueString()
 	getResponse, httpResp, err := r.api.ClientApi.GetById(ctx, clientId)
-	if err != nil || httpResp.StatusCode == http.StatusNotFound {
+	if httpResp.StatusCode == http.StatusNotFound {
+		resp.Diagnostics.AddError(
+			"Client not found",
+			fmt.Sprintf("Client with id: %s was not found.", clientId),
+		)
 		resp.State.RemoveResource(ctx)
+		return
+	}
+	if err != nil {
+		if httpResp != nil {
+			err = fmt.Errorf("%s: %w", http.StatusText(httpResp.StatusCode), err)
+		}
+		resp.Diagnostics.AddError(
+			"Unexpected error occured",
+			fmt.Sprintf("Unexpected error occured when getting client with id: %s, error: %s", clientId, err.Error()),
+		)
 		return
 	}
 	if len(getResponse.ClientProperties) == 0 || strconv.Itoa(getResponse.ClientProperties[0].Client.ClientEntity.ClientId) != clientId {
